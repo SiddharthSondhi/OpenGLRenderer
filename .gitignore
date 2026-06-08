@@ -1,0 +1,13 @@
+# Visual Studio specific
+.vs/
+*.vcxproj.user
+*.VC.db
+*.VC.opendb
+
+# Build output
+build/
+x64/
+
+# Auto-generated 
+*.vcxproj.filters
+imgui.ini

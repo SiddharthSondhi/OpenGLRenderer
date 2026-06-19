@@ -141,16 +141,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\glad\glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\shader.h" />
+    <ClInclude Include="src\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\lightFS.glsl" />
+    <None Include="shaders\lightVS.glsl" />
+    <None Include="shaders\objectFS.glsl" />
+    <None Include="shaders\objectVS.glsl" />
     <None Include="shaders\simpleFS.glsl" />
     <None Include="shaders\simpleVS.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resources\textures\awesomeface.png" />
+    <Image Include="resources\textures\container.jpg" />
+    <Image Include="resources\textures\container2.png" />
+    <Image Include="resources\textures\wall.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

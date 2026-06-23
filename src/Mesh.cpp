@@ -39,7 +39,7 @@ Mesh::Mesh(const std::vector<float>& vertices,
 	}
 
 	for (int i{ 0 }; i < attribSizes.size(); i++) {
-		glVertexAttribPointer(i, attribSizes[i], GL_FLOAT, GL_FALSE, stride, (void*)(offsets[i]));
+		glVertexAttribPointer(i, attribSizes[i], GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(offsets[i]));
 		glEnableVertexAttribArray(i);
 	}
 

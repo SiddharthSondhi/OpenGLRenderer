@@ -6,15 +6,20 @@
 #include "Model.h"
 #include "SceneObject.h"
 #include "Colors.h"
+#include "GUI.h"
 
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 
 #include <iostream>
+#include <span>
+#include <array>
 
 
 //prototypes
@@ -25,6 +30,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3);
+void setViewProjection(std::span<Shader*> shaders, const glm::mat4& view, const glm::mat4& projection);
 
 
 //global variables
@@ -38,12 +44,12 @@ float lastFrame = 0.0f; // Time of last frame
 float lastMousePosX{ WINDOW_WIDTH / 2 };
 float lastMousePosY{ WINDOW_HEIGHT / 2 };  
 bool firstMouse{ true };
+bool mouseGUIEnabled{ false };
 
-Camera camera{ glm::vec3{0.0f, 0.0f, 5.0f } };
+Camera camera{ glm::vec3{30.0f, 5.0f, 15.0f } };
 
 bool enableFlashLight{ false };
-
-
+static glm::vec3 backpackPos{ 31.0f, 3.0f, 0.0f };
 
 
 int main() {
@@ -82,22 +88,71 @@ int main() {
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetKeyCallback(window, keyCallback);
 
+    // initialize gui
+    GUI::init(window);
+    GUI::Settings gui;
+
     //Shaders
-    Shader basicShader("./shaders/simpleVS.glsl", "./shaders/simpleFS.glsl");
+    Shader simpleShader("./shaders/simpleVS.glsl", "./shaders/simpleFS.glsl");
     Shader lightShader("./shaders/lightVS.glsl", "./shaders/lightFS.glsl");
     Shader objectShader("./shaders/objectVS.glsl", "./shaders/objectFS.glsl");
+    Shader depthShader("./shaders/depthVS.glsl", "./shaders/depthFS.glsl");
+    Shader frameBufferShader("./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl" );
+
+    std::array shaders3D{ &simpleShader, &lightShader, &objectShader, &depthShader };
+
+    //framebuffer
+    GLuint framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // generate texture
+    GLuint textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // attach it to currently bound framebuffer object
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+    //renderbuffer for depth/stencil testing
+    GLuint rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // textures
-    unsigned int boxDiffTex{ Utils::loadTexture("./resources/textures/container2.png") };
-    unsigned int boxSpecTex{ Utils::loadTexture("./resources/textures/container2_specular.png") };
+    unsigned int container2Diff{ Utils::loadTextureFromFile("./resources/textures/container2.png") };
+    unsigned int container2Spec{ Utils::loadTextureFromFile("./resources/textures/container2_specular.png") };
+    unsigned int boxMarbleTex{ Utils::loadTextureFromFile("./resources/textures/marble.jpg") };
+    unsigned int planeMetalTex{ Utils::loadTextureFromFile("./resources/textures/metal.png") };
+    unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
+    unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png")};
 
     // meshes and models
-    Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{boxDiffTex, Texture::diffuse}, {boxSpecTex, Texture::specular}} };
-    Mesh lightMesh{ VertexData::cube, {3} };
+    Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{container2Diff, Texture::diffuse}, {container2Spec, Texture::specular}} };
+    Mesh lightMesh{ VertexData::cubeTex, {3, 2} };
     Model backpackModel{ "./resources/models/backpack/backpack.obj", false };
+    Mesh marbleCubeMesh{ VertexData::cubeTex, {3, 2}, {{boxMarbleTex, Texture::diffuse}} };
+    Mesh planeMesh{ VertexData::planeTex, {3, 2}, {{planeMetalTex, Texture::diffuse}} };
+    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", true };
+    Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
+    Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
+    Mesh screenQuadMesh{ VertexData::screenQuad, {2, 2}, {{textureColorbuffer, Texture::diffuse}} };
 
     // scene objects
-    SceneObject backpack{ &backpackModel };
+    SceneObject backpack{ &backpackModel, backpackPos };
     backpack.scale = glm::vec3{ .8f };
 
     glm::vec3 lightPos{ 1.2f, 1.0f, 2.0f };
@@ -105,6 +160,42 @@ int main() {
     SceneObject light1{ &lightMesh, lightPos , glm::vec3{0.2f} };
     SceneObject light2{ &lightMesh, lightPos2, glm::vec3{0.2f} };
     SceneObject light3{ &lightMesh, lightPos2, glm::vec3{0.2f} };
+
+    SceneObject marbleCube1{ &marbleCubeMesh, {-1.0f, 0.0f, -31.0f } };
+    SceneObject marbleCube2{ &marbleCubeMesh, { 2.0f, 0.0f, -30.0f } };
+
+    SceneObject planeMetal{ &planeMesh , {0.0f, 0.0f, -30.0f} };
+    planeMetal.scale = glm::vec3{ 1.5f, 1.0f, 1.5f };
+
+    SceneObject countryScene{ &countrySceneModel, {50.0f, 0.0f, -30.0f} };
+    countryScene.rotation = { 0.0f, 90.0f, 0.0f };
+
+    SceneObject cityScene{ &citySceneModel};
+    cityScene.rotation = { -90.0f, 0.0f, 0.0f };
+
+    std::vector<glm::vec3> vegetationPos{
+        glm::vec3(-2.5f, 0.0f, -28.48f),
+        glm::vec3(1.5f, 0.0f, -27.51f),
+        glm::vec3(0.0f, 0.0f, -29.03f),
+        glm::vec3(-0.3f, 0.0f, -32.3f),
+        glm::vec3(0.5f, 0.0f, -30.6f)
+    };
+
+    std::vector<SceneObject> vegetation{};
+    for (auto pos : vegetationPos) {
+        vegetation.push_back(SceneObject{ &grassMesh, pos });
+    }
+
+    std::vector <glm::vec3> windowsPos{
+        glm::vec3(-2.5f, 0.0f, -29.48f),
+        glm::vec3(-.5f, 0.0f, -28.51f),
+        glm::vec3(1.6f, 0.0f, -25.51f),
+    };
+
+    std::vector<SceneObject> windows{};
+    for (auto pos : windowsPos) {
+        windows.push_back(SceneObject{ &windowMesh, pos });
+    }
 
     // ----------------------------------------Uniforms----------------------------------------------
     objectShader.use();
@@ -154,6 +245,11 @@ int main() {
 
     // settings
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_CULL_FACE);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //wireframe mode
 
     // ---------------------------------------Rendering Loop-------------------------------------------
@@ -168,9 +264,12 @@ int main() {
         processInput(window);
 
 
-        //rendering
+        //before rendering bind to the framebuffer
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glEnable(GL_DEPTH_TEST);
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         //update postions
         orbitLights(light1, light2, light3);
@@ -178,29 +277,17 @@ int main() {
 
         // calculate view and projection matrix
         glm::mat4 view{ camera.getViewMatrix() };
-        glm::mat4 projection{ glm::perspective(glm::radians(camera.zoom), static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 100.0f) };
+        glm::mat4 projection{ glm::perspective(glm::radians(camera.zoom), static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 300.0f) };
 
+        setViewProjection(shaders3D, view, projection);
 
-        // object
-        objectShader.use();
-
-        objectShader.setMat4("view", view);
-        objectShader.setMat4("projection", projection);
-
-        objectShader.setVec3("dirLight.direction", glm::vec3{ view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f} });
-        objectShader.setVec3("pointLights[0].position", glm::vec3{ view * glm::vec4{light1.position, 1.0f} });
-        objectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light2.position, 1.0f} });
-        objectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light3.position, 1.0f} });
-        objectShader.setVec3("spotLight.position", glm::vec3{ view * glm::vec4{camera.position, 1.0f } });
-        objectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
-        objectShader.setBool("enableFlashLight", enableFlashLight);
-
-        backpack.draw(objectShader);
+        // post processing 
+        frameBufferShader.use();
+        frameBufferShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
+        frameBufferShader.setInt("postProcessingMode", gui.postProcessingMode);
 
         //lights
         lightShader.use();
-        lightShader.setMat4("view", view);
-        lightShader.setMat4("projection", projection);
 
         lightShader.setVec3("color", Colors::blue);
         light1.draw(lightShader);
@@ -211,11 +298,64 @@ int main() {
         lightShader.setVec3("color", Colors::green);
         light3.draw(lightShader);
 
+        // object shader
+        objectShader.use();
+
+        objectShader.setVec3("dirLight.direction", glm::vec3{ view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f} });
+        objectShader.setVec3("pointLights[0].position", glm::vec3{ view * glm::vec4{light1.position, 1.0f} });
+        objectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light2.position, 1.0f} });
+        objectShader.setVec3("pointLights[2].position", glm::vec3{ view * glm::vec4{light3.position, 1.0f} });
+        objectShader.setVec3("spotLight.position", glm::vec3{ 0.0f });
+        objectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
+        objectShader.setBool("enableFlashLight", enableFlashLight);
+
+        backpack.draw(objectShader);
+        cityScene.draw(objectShader);
+        countryScene.draw(objectShader);
+
+        
+        // other objects
+        simpleShader.use();
+
+        marbleCube1.draw(depthShader);
+        marbleCube2.draw(simpleShader);
+        planeMetal.draw(simpleShader);
+
+        //transparent
+        for (auto v : vegetation) {
+            v.draw(simpleShader);
+        }
+        
+        // semi transparent
+        std::sort(windows.begin(), windows.end(),
+            [](const auto& a, const auto& b) {
+                return glm::length2(camera.position - a.position) > glm::length2(camera.position - b.position);
+            }
+        );
+
+        for (auto w : windows) {
+            w.draw(simpleShader);
+        }
+
+        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        
+        // clear all relevant buffers
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // draw screen quad (postprocessing)
+        screenQuadMesh.draw(frameBufferShader);
+
+        // gui
+        GUI::define(gui);
+        GUI::render();
 
         glfwSwapBuffers(window);
     }
-
     // cleanup
+    GUI::shutDown();
     glfwTerminate();
 }
 
@@ -241,9 +381,18 @@ void processInput(GLFWwindow* window) {
         camera.processKeyboard(Camera::Camera_Movement::UP, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera.processKeyboard(Camera::Camera_Movement::DOWN, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) 
+        camera.movementSpeed = 30.0f;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE)
+        camera.movementSpeed = 10.0f;
 }
 
 void mouseCallback(GLFWwindow* window, double xposIn, double yposIn) {
+    if (mouseGUIEnabled) {
+        firstMouse = true;
+        return;
+    }
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -264,6 +413,9 @@ void mouseCallback(GLFWwindow* window, double xposIn, double yposIn) {
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (mouseGUIEnabled)
+        return;
+
     camera.processMouseScroll(yoffset);
 }
 
@@ -273,25 +425,15 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         enableFlashLight = !enableFlashLight;
     }
 
+    if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS) {
+        mouseGUIEnabled = !mouseGUIEnabled;
+        glfwSetInputMode(window, GLFW_CURSOR, mouseGUIEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+    }
+
 }
 
 void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3) {
-    //float lightOrbitRadius = 3.5f;
-
-    //glm::vec3 basePos;
-    //basePos.x = sin(glfwGetTime() * 2) * lightOrbitRadius;
-    //basePos.y = 0.0f;
-    //basePos.z = cos(glfwGetTime() * 2) * lightOrbitRadius;
-    //glm::mat4 tilt = glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::normalize(glm::vec3(0.0f, 0.0f, 1.0f)));
-    //light1.position = glm::vec3(tilt * glm::vec4(basePos, 1.0f)) + glm::vec3(0.0f);
-
-    //basePos.x = sin((glfwGetTime() + 2.14) * 2) * lightOrbitRadius;
-    //basePos.y = 0.0f;
-    //basePos.z = cos((glfwGetTime() + 2.14) * 2) * lightOrbitRadius;
-    //tilt = glm::rotate(glm::mat4(1.0f), glm::radians(30.0f), glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f)));
-    //light2.position = glm::vec3(tilt * glm::vec4(basePos, 1.0f)) + glm::vec3(0.0f);
-
-    float radius = 3.5f;
+    float radius = 2.5f;
     float t = glfwGetTime() * 2.0f;
 
     // Base orbit positions (120 degrees apart)
@@ -332,9 +474,18 @@ void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3) 
         glm::vec3(1.0f, 0.0f, 0.0f)
     );
 
-    glm::vec3 center{ 0.0f, 1.0f, 0.0f };
+    glm::vec3 center{ backpackPos + glm::vec3{0.0f, 1.0f, 0.0f} };
 
     light1.position = glm::vec3(tilt1 * glm::vec4(p1, 1.0f)) + center;
     light2.position = glm::vec3(tilt2 * glm::vec4(p2, 1.0f)) + center;
     light3.position = glm::vec3(tilt3 * glm::vec4(p3, 1.0f)) + center;
+}
+
+void setViewProjection(std::span<Shader*> shaders, const glm::mat4& view, const glm::mat4& projection) {
+    for (Shader* shader : shaders) {
+        shader->use();
+
+        shader->setMat4("view", view);
+        shader->setMat4("projection", projection);
+    }
 }

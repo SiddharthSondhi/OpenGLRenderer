@@ -79,17 +79,17 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     // process material
     aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-    std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE);
+    std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, scene);
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
 
-    std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR);
+    std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, scene);
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
     return Mesh(vertices, attribSizes, textures, indices);
 }
 
 
-std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type) {
+std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene) {
     
     // loop through each textureName for this type in mat and load the textureName, then create Texture objects and return them
     std::vector<Texture> textures;
@@ -98,6 +98,10 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
         mat->GetTexture(type, i, &str);
         std::string textureName{ str.C_Str() };
 
+        if (textureName.empty()) {
+            continue;
+        }
+
         //check to see if textureName has already been loaded
         if (loadedTextures.contains(textureName)) {
             textures.push_back(loadedTextures[textureName]);
@@ -105,7 +109,29 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
         }
 
         Texture texture;
-        texture.id = Utils::loadTexture(directory + "/" + textureName);
+
+        // if texture is embedded
+        if (textureName[0] == '*'){
+            unsigned int textureIndex{ static_cast<unsigned int>(std::stoi(textureName.substr(1)))};
+
+            if (textureIndex < scene->mNumTextures){
+                aiTexture* embeddedTexture = scene->mTextures[textureIndex];
+
+                texture.id = Utils::loadTextureFromMemory(
+                    reinterpret_cast<unsigned char*>(embeddedTexture->pcData),
+                    embeddedTexture->mWidth
+                );
+            }
+            else
+            {
+                std::cout << "Invalid embedded texture index: " << textureName << '\n';
+                continue;
+            }
+        }
+        // otherwise load from file
+        else{
+            texture.id = Utils::loadTextureFromFile(directory + "/" + textureName);
+        }
         
         switch (type) {
         case aiTextureType_DIFFUSE:  

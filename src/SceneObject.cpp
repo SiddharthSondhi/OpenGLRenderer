@@ -17,7 +17,7 @@ SceneObject::SceneObject(Mesh* mesh, glm::vec3 postion, glm::vec3 scale, glm::ve
 	scale{ scale },
 	rotation{ rotation } {}
 
-void SceneObject::draw(Shader& shader) {
+void SceneObject::draw(const Shader& shader) const {
 	shader.use();
 
 	//update model matrix
@@ -31,7 +31,7 @@ void SceneObject::draw(Shader& shader) {
 	if (this->model) {
 		this->model->draw(shader);
 	}
-	else if (this->mesh) {
+	else if (mesh) {
 		mesh->draw(shader);
 	}
 	else {

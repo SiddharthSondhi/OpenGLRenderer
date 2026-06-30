@@ -2,9 +2,11 @@
 
 out vec4 fragColor;
 
-in vec3 normal;
-in vec3 fragPos;
-in vec2 texCoords;
+in VS_OUT{
+    vec3 normal;
+    vec3 fragPos;
+    vec2 texCoords;
+} fs_in;
 
 
 struct Material{
@@ -69,16 +71,16 @@ vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec
 void main(){
     //------------------------- doing all calculations in VIEW SPACE -----------------------
 	// sample textures
-	vec4 texDiff = texture(material.texture_diffuse1, texCoords);
-	vec4 texSpec = texture(material.texture_specular1, texCoords);
+	vec4 texDiff = texture(material.texture_diffuse1, fs_in.texCoords);
+	vec4 texSpec = texture(material.texture_specular1, fs_in.texCoords);
 	
 	//discard fragment if alpha below threshold
-	if(texDiff.a < 0.05)
-        discard;
+	//if(texDiff.a < 0.05)
+       // discard;
 
-	vec3 norm = normalize(normal);
-	vec3 viewDir = normalize(-fragPos);
-	vec3 result = vec3(0.0f);
+	vec3 norm = normalize(fs_in.normal);
+	vec3 viewDir = normalize(-fs_in.fragPos);
+	vec3 result = vec3(0.0);
 
 	//directional light
 	result += calcDirLight(dirLight, norm, viewDir, texDiff, texSpec);
@@ -93,18 +95,18 @@ void main(){
 		result += calcSpotLight(spotLight, norm, viewDir, texDiff, texSpec);
 
 
-	fragColor = vec4(result, 1.0f);
+	fragColor = vec4(result, 1.0);
 }
 
 vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
 	vec3 lightDir = normalize(-light.direction);
 
 	//diffuse
-	float diff = max(dot(normal, lightDir), 0.0f);
+	float diff = max(dot(normal, lightDir), 0.0);
 
 	//specular 
 	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 
 	//combine results
 	vec3 ambient  = light.ambient  * vec3(texDiff);
@@ -115,18 +117,18 @@ vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 
 }
 
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
-    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 lightDir = normalize(light.position - fs_in.fragPos);
 
     //diffuse
-    float diff = max(dot(normal, lightDir), 0.0f);
+    float diff = max(dot(normal, lightDir), 0.0);
 
     //specular
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 
     // attenuation
-    float distance = length(light.position - fragPos);
-    float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
+    float distance = length(light.position - fs_in.fragPos);
+    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
     
     // combine results
     vec3 ambient  = light.ambient  * vec3(texDiff);
@@ -139,18 +141,18 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec4 texDiff, v
 
 vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
 	vec3 spotLightDir = normalize(-light.direction);
-	vec3 fragToLightDir = normalize(light.position - fragPos);
+	vec3 fragToLightDir = normalize(light.position - fs_in.fragPos);
 
 	//diffuse
-	float diff = max(dot(normal, fragToLightDir), 0.0f);
+	float diff = max(dot(normal, fragToLightDir), 0.0);
 
 	//specular
 	vec3 reflectDir = reflect(-fragToLightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0f), material.shininess);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
 
 	//attenuation
-	float distance = length(light.position - fragPos);
-	float attentuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+	float distance = length(light.position - fs_in.fragPos);
+	float attentuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
 	//spotlight intentsity calculation
 	float theta = dot(fragToLightDir, normalize(spotLightDir));

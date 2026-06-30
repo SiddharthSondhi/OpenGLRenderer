@@ -20,7 +20,7 @@ public:
 	SceneObject(Model* model, glm::vec3 postion = { 0.0f, 0.0f, 0.0f }, glm::vec3 scale = { 1.0f, 1.0f, 1.0f }, glm::vec3 rotation = { 0.0f, 0.0f, 0.0f });
 	SceneObject(Mesh* mesh, glm::vec3 postion = { 0.0f, 0.0f, 0.0f }, glm::vec3 scale = { 1.0f, 1.0f, 1.0f }, glm::vec3 rotation = { 0.0f, 0.0f, 0.0f });
 
-	void draw(Shader& shader);
+	void draw(const Shader& shader) const;
 
 
 private:

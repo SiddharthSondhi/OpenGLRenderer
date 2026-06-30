@@ -151,21 +151,25 @@
     <ClCompile Include="src\imgui\imgui_draw.cpp" />
     <ClCompile Include="src\imgui\imgui_tables.cpp" />
     <ClCompile Include="src\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="src\InstancedSceneObject.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Model.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\SceneObject.cpp" />
+    <ClCompile Include="src\Skybox.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Camera.h" />
     <ClInclude Include="include\Colors.h" />
     <ClInclude Include="include\GUI.h" />
+    <ClInclude Include="include\InstancedSceneObject.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\Model.h" />
     <ClInclude Include="include\SceneObject.h" />
     <ClInclude Include="include\Shader.h" />
+    <ClInclude Include="include\Skybox.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\VertexData.h" />
     <ClInclude Include="src\Camera.h" />
@@ -180,14 +184,27 @@
   <ItemGroup>
     <None Include="shaders\depthFS.glsl" />
     <None Include="shaders\depthVS.glsl" />
+    <None Include="shaders\explodeNormalsFS.glsl" />
+    <None Include="shaders\explodeNormalsGS.glsl" />
+    <None Include="shaders\explodeNormalsVS.glsl" />
     <None Include="shaders\frameBufferFS.glsl" />
     <None Include="shaders\frameBufferVS.glsl" />
+    <None Include="shaders\instanceObjectVS.glsl" />
     <None Include="shaders\lightFS.glsl" />
     <None Include="shaders\lightVS.glsl" />
+    <None Include="shaders\normalsFS.glsl" />
+    <None Include="shaders\normalsGS.glsl" />
+    <None Include="shaders\normalsVS.glsl" />
     <None Include="shaders\objectFS.glsl" />
     <None Include="shaders\objectVS.glsl" />
+    <None Include="shaders\reflectiveFS.glsl" />
+    <None Include="shaders\reflectiveVS.glsl" />
+    <None Include="shaders\refractiveFS.glsl" />
+    <None Include="shaders\refractiveVS.glsl" />
     <None Include="shaders\simpleFS.glsl" />
     <None Include="shaders\simpleVS.glsl" />
+    <None Include="shaders\skyboxFS.glsl" />
+    <None Include="shaders\skyboxVS.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\textures\awesomeface.png" />

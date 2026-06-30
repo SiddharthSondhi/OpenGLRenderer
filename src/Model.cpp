@@ -151,8 +151,20 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 }
 
 
-void Model::draw(Shader& shader) {
-    for (unsigned int i = 0; i < meshes.size(); i++) {
-        meshes[i].draw(shader);
+void Model::draw(const Shader& shader) const{
+    for (const Mesh& m : meshes) {
+        m.draw(shader);
     }
 }
+
+void Model::drawInstanced(const Shader& shader, int count) const{
+    for (const Mesh& m : meshes) {
+        m.drawInstanced(shader, count);
+    }
+}
+
+const std::vector<Mesh>& Model::getMeshes() const {
+    return meshes;
+}
+
+

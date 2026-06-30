@@ -5,12 +5,13 @@
 Mesh::Mesh(const std::vector<float>& vertices,
 	const std::vector<unsigned int>& attribSizes,
 	const std::vector<Texture>& textures,
-	const std::vector<unsigned int>& indices) 
+	const std::vector<unsigned int>& indices)
 	:
-	textures{textures},
-	indicesCount{static_cast<int>(indices.size())},
-	verticesCount{static_cast<int>(vertices.size() / std::accumulate(attribSizes.begin(), attribSizes.end(), 0))},
-	usingEBO{!indices.empty()}
+	textures{ textures },
+	indicesCount{ static_cast<int>(indices.size()) },
+	verticesCount{ static_cast<int>(vertices.size() / std::accumulate(attribSizes.begin(), attribSizes.end(), 0)) },
+	usingEBO{ !indices.empty() },
+	attribCount{ static_cast<int>(attribSizes.size()) }
 {
 	// Set up VAO and VBO
 	glGenVertexArrays(1, &VAO);
@@ -18,13 +19,13 @@ Mesh::Mesh(const std::vector<float>& vertices,
 
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
 	// Set up EBO if indices provided
 	if (usingEBO) {
 		glGenBuffers(1, &EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 	}
 
 	// set up attributes
@@ -46,7 +47,37 @@ Mesh::Mesh(const std::vector<float>& vertices,
 	glBindVertexArray(0);
 }
 
-void Mesh::draw(Shader& shader) {
+void Mesh::draw(const Shader& shader) const{
+	activateTextures(shader);
+
+	//draw mesh
+	glBindVertexArray(VAO);
+
+	if (usingEBO)
+		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+	else 
+		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
+
+
+	glBindVertexArray(0);
+}
+
+
+void Mesh::drawInstanced(const Shader& shader, int count) const {
+	activateTextures(shader);
+
+	//draw instanced mesh
+	glBindVertexArray(VAO);
+
+	if (usingEBO)
+		glDrawElementsInstanced(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0, count);
+	else
+		glDrawArraysInstanced(GL_TRIANGLES, 0, verticesCount, count);
+
+	glBindVertexArray(0);
+}
+
+void Mesh::activateTextures(const Shader& shader) const {
 	shader.use();
 
 	int diffuseNum{ 1 }, specularNum{ 1 };
@@ -71,15 +102,15 @@ void Mesh::draw(Shader& shader) {
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 
-	//draw mesh
-	glBindVertexArray(VAO);
-
-	if (usingEBO)
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-	else 
-		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
+	glActiveTexture(GL_TEXTURE0);
+}
 
 
-	glBindVertexArray(0);
 
+unsigned int Mesh::getVAO() const {
+	return VAO;
+}
+
+int Mesh::getAttribCount() const {
+	return attribCount;
 }

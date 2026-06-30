@@ -1,4 +1,4 @@
-#include "Shader.h";
+#include "Shader.h"
 #include "Camera.h"
 #include "Mesh.h"
 #include "Utils.h"
@@ -7,6 +7,8 @@
 #include "SceneObject.h"
 #include "Colors.h"
 #include "GUI.h"
+#include "Skybox.h"
+#include "InstancedSceneObject.h"
 
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
@@ -18,8 +20,8 @@
 #include <glm/gtx/norm.hpp>
 
 #include <iostream>
-#include <span>
 #include <array>
+#include <cmath>
 
 
 //prototypes
@@ -30,19 +32,18 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3);
-void setViewProjection(std::span<Shader*> shaders, const glm::mat4& view, const glm::mat4& projection);
 
 
 //global variables
-constexpr int WINDOW_WIDTH{ 1920 };
-constexpr int WINDOW_HEIGHT{ 1080 };
+int windowWidth;
+int windowHeight;
 
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
 // position of mouse last frame, used to calculate yaw and pitch for camera when moving mouse
-float lastMousePosX{ WINDOW_WIDTH / 2 };
-float lastMousePosY{ WINDOW_HEIGHT / 2 };  
+float lastMousePosX{ static_cast<float>(windowWidth) / 2 };
+float lastMousePosY{ static_cast<float>(windowHeight) / 2 };  
 bool firstMouse{ true };
 bool mouseGUIEnabled{ false };
 
@@ -54,7 +55,6 @@ static glm::vec3 backpackPos{ 31.0f, 3.0f, 0.0f };
 
 int main() {
     // ---------------------------------------------SETUP---------------------------------------------
-
     //glfw
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -63,17 +63,23 @@ int main() {
 
     // FOR MAC OS
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    windowWidth = mode->width;
+    windowHeight = mode->height;
 
-    GLFWwindow* window{ glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenGL Window", NULL, NULL) };
+    glfwWindowHint(GLFW_SAMPLES, 4);
+    GLFWwindow* window{ glfwCreateWindow(windowWidth, windowHeight, "OpenGL Window", NULL, NULL) };
     if (window == NULL) {
         std::cout << "Failed to create GLFW window.\n";
         glfwTerminate();
         return -1;
     }
+    glfwSetWindowPos(window, 0, 0);
 
     glfwMakeContextCurrent(window);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+    glfwSwapInterval(0); // 0 = V-Sync off, 1 = V-Sync on
 
     //glad
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -98,8 +104,12 @@ int main() {
     Shader objectShader("./shaders/objectVS.glsl", "./shaders/objectFS.glsl");
     Shader depthShader("./shaders/depthVS.glsl", "./shaders/depthFS.glsl");
     Shader frameBufferShader("./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl" );
-
-    std::array shaders3D{ &simpleShader, &lightShader, &objectShader, &depthShader };
+    Shader skyboxShader("./shaders/skyboxVS.glsl", "./shaders/skyboxFS.glsl");
+    Shader reflectiveShader("./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl");
+    Shader refractiveShader("./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl");
+    Shader explodeNormalsShader("./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl");
+    Shader normalVisShader("./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl");
+    Shader instanceObjectShader("./shaders/instanceObjectVS.glsl", "./shaders/objectFS.glsl");
 
     //framebuffer
     GLuint framebuffer;
@@ -110,7 +120,7 @@ int main() {
     GLuint textureColorbuffer;
     glGenTextures(1, &textureColorbuffer);
     glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -122,7 +132,7 @@ int main() {
     GLuint rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowWidth, windowHeight);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
@@ -130,6 +140,14 @@ int main() {
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    //matrices UBO
+    unsigned int uboMatrices;
+    glGenBuffers(1, &uboMatrices);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
 
     // textures
     unsigned int container2Diff{ Utils::loadTextureFromFile("./resources/textures/container2.png") };
@@ -139,17 +157,35 @@ int main() {
     unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
     unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png")};
 
+    std::array<unsigned int, 10> skyboxes  {
+        0,
+        Utils::loadCubemap("./resources/textures/cubemaps/SkyHighFluffyCloud"),
+        Utils::loadCubemap("./resources/textures/cubemaps/PlanetaryEarth"),
+        Utils::loadCubemap("./resources/textures/cubemaps/MegaSun"),
+        Utils::loadCubemap("./resources/textures/cubemaps/highFantasy"),
+        Utils::loadCubemap("./resources/textures/cubemaps/underTheSea"),
+        Utils::loadCubemap("./resources/textures/cubemaps/CasualDay"),
+        Utils::loadCubemap("./resources/textures/cubemaps/DayInTheClouds"),
+        Utils::loadCubemap("./resources/textures/cubemaps/DarkStorm"),
+        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight")
+    };
+
     // meshes and models
     Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{container2Diff, Texture::diffuse}, {container2Spec, Texture::specular}} };
     Mesh lightMesh{ VertexData::cubeTex, {3, 2} };
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", false };
     Mesh marbleCubeMesh{ VertexData::cubeTex, {3, 2}, {{boxMarbleTex, Texture::diffuse}} };
     Mesh planeMesh{ VertexData::planeTex, {3, 2}, {{planeMetalTex, Texture::diffuse}} };
-    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", true };
     Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
     Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
     Mesh screenQuadMesh{ VertexData::screenQuad, {2, 2}, {{textureColorbuffer, Texture::diffuse}} };
+
+    Model backpackModel{ "./resources/models/backpack/backpack.obj", false };
+    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false };
+    Model planetModel{ "./resources/models/planet/planet.obj", false };
+    Model rockModel{ "./resources/models/rock/rock.obj", true };
+
+    Skybox skybox{ VertexData::skyboxVertices, 0};
 
     // scene objects
     SceneObject backpack{ &backpackModel, backpackPos };
@@ -172,6 +208,8 @@ int main() {
 
     SceneObject cityScene{ &citySceneModel};
     cityScene.rotation = { -90.0f, 0.0f, 0.0f };
+
+    SceneObject planet{ &planetModel , {0.0f, -3.0f, 0.0f}, glm::vec3{4.0f} };
 
     std::vector<glm::vec3> vegetationPos{
         glm::vec3(-2.5f, 0.0f, -28.48f),
@@ -197,13 +235,36 @@ int main() {
         windows.push_back(SceneObject{ &windowMesh, pos });
     }
 
+    int amount{ 100000 };
+    float radius{ 150.0f };
+    float offset = { 25.0f };
+    
+    std::vector<glm::mat4> modelMats;
+    for (int i{ 0 }; i < amount; i++) {
+        float angle{ glm::radians(static_cast<float>(i) / amount * 360.0f )};
+        float displacement{ (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset };
+        float x{ sin(angle) * radius + displacement };
+        displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
+        float y{ displacement * 0.4f };
+        displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
+        float z{ cos(angle) * radius + displacement };
+        float scale = (rand() % 20) / 100.0f + 0.05;
+        float rotAngle = (rand() % 360);
+        
+        glm::mat4 mat{ 1.0f };
+        mat = glm::translate(mat, { x, y, z });
+        mat = glm::rotate(mat, rotAngle, glm::vec3{ 0.4f, 0.6f, 0.8f });
+        mat = glm::scale(mat, glm::vec3{ scale });
+
+        modelMats.push_back(mat);
+    }
+
+    InstancedSceneObject asteroids{ &rockModel, modelMats };
+
+
     // ----------------------------------------Uniforms----------------------------------------------
     objectShader.use();
     
-    // material
-    objectShader.setVec3("material.ambient", { 1.0f, 0.5f, 0.31f });
-    objectShader.setVec3("material.diffuse", { 1.0f, 0.5f, 0.31f });
-    objectShader.setVec3("material.specular", { 0.5f, 0.5f, 0.5f });
     objectShader.setFloat("material.shininess", 256.0f);
 
     // directional light
@@ -240,9 +301,46 @@ int main() {
     objectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
     objectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
 
+
+    instanceObjectShader.use();
     
+    instanceObjectShader.setFloat("material.shininess", 256.0f);
 
+    // directional light
+    instanceObjectShader.setVec3("dirLight.ambient", { 0.2f, 0.2f, 0.2f });
+    instanceObjectShader.setVec3("dirLight.diffuse", { 0.7f, 0.7f, 0.7f });
+    instanceObjectShader.setVec3("dirLight.specular", { 1.0f, 1.0f, 1.0f });
 
+    // point lights
+    instanceObjectShader.setFloat("pointLights[0].constant", 1.0f);
+    instanceObjectShader.setFloat("pointLights[0].linear", 0.09f);
+    instanceObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
+    instanceObjectShader.setVec3("pointLights[0].diffuse", Colors::blue);
+    instanceObjectShader.setVec3("pointLights[0].specular", Colors::blue);
+
+    instanceObjectShader.setFloat("pointLights[1].constant", 1.0f);
+    instanceObjectShader.setFloat("pointLights[1].linear", 0.09f);
+    instanceObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
+    instanceObjectShader.setVec3("pointLights[1].diffuse", Colors::red);
+    instanceObjectShader.setVec3("pointLights[1].specular", Colors::red);
+
+    instanceObjectShader.setFloat("pointLights[2].constant", 1.0f);
+    instanceObjectShader.setFloat("pointLights[2].linear", 0.09f);
+    instanceObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
+    instanceObjectShader.setVec3("pointLights[2].diffuse", Colors::green);
+    instanceObjectShader.setVec3("pointLights[2].specular", Colors::green);
+
+    // spot light
+    instanceObjectShader.setFloat("spotLight.constant", 1.0f);
+    instanceObjectShader.setFloat("spotLight.linear", 0.022f);
+    instanceObjectShader.setFloat("spotLight.quadratic", 0.0019f);
+    instanceObjectShader.setVec3("spotLight.ambient", { 0.2f, 0.2f, 0.2f });
+    instanceObjectShader.setVec3("spotLight.diffuse", { 0.5f, 0.5f, 0.5f });
+    instanceObjectShader.setVec3("spotLight.specular", { 1.0f, 1.0f, 1.0f });
+    instanceObjectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
+    instanceObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
+
+    
     // settings
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -250,12 +348,13 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_MULTISAMPLE);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //wireframe mode
 
     // ---------------------------------------Rendering Loop-------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         // time logic
-        float currentFrame = glfwGetTime();
+        float currentFrame{ static_cast<float>(glfwGetTime()) };
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
@@ -277,26 +376,30 @@ int main() {
 
         // calculate view and projection matrix
         glm::mat4 view{ camera.getViewMatrix() };
-        glm::mat4 projection{ glm::perspective(glm::radians(camera.zoom), static_cast<float>(WINDOW_WIDTH) / WINDOW_HEIGHT, 0.1f, 300.0f) };
+        glm::mat4 projection{ glm::perspective(glm::radians(camera.zoom), static_cast<float>(windowWidth) / windowHeight, 0.1f, 500.0f) };
 
-        setViewProjection(shaders3D, view, projection);
+        glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
+        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
+
 
         // post processing 
         frameBufferShader.use();
         frameBufferShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
         frameBufferShader.setInt("postProcessingMode", gui.postProcessingMode);
 
+
         //lights
         lightShader.use();
 
         lightShader.setVec3("color", Colors::blue);
-        light1.draw(lightShader);
+        //light1.draw(lightShader);
 
         lightShader.setVec3("color", Colors::red);
-        light2.draw(lightShader);
+        //light2.draw(lightShader);
 
         lightShader.setVec3("color", Colors::green);
-        light3.draw(lightShader);
+        //light3.draw(lightShader);
 
         // object shader
         objectShader.use();
@@ -309,21 +412,40 @@ int main() {
         objectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
         objectShader.setBool("enableFlashLight", enableFlashLight);
 
-        backpack.draw(objectShader);
-        cityScene.draw(objectShader);
-        countryScene.draw(objectShader);
+        instanceObjectShader.use();
 
+        instanceObjectShader.setVec3("dirLight.direction", glm::vec3{ view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f} });
+        instanceObjectShader.setVec3("pointLights[0].position", glm::vec3{ view * glm::vec4{light1.position, 1.0f} });
+        instanceObjectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light2.position, 1.0f} });
+        instanceObjectShader.setVec3("pointLights[2].position", glm::vec3{ view * glm::vec4{light3.position, 1.0f} });
+        instanceObjectShader.setVec3("spotLight.position", glm::vec3{ 0.0f });
+        instanceObjectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
+        instanceObjectShader.setBool("enableFlashLight", enableFlashLight);
+
+        //explode normals
+        explodeNormalsShader.use();
+        explodeNormalsShader.setFloat("time", static_cast<float>(glfwGetTime()));
+
+
+        //draw objects
+        //backpack.draw(objectShader);
+        //backpack.draw(normalVisShader);
+        //cityScene.draw(objectShader);
+        //countryScene.draw(objectShader);
+        
+        planet.draw(objectShader);
+        asteroids.draw(instanceObjectShader);
         
         // other objects
         simpleShader.use();
 
-        marbleCube1.draw(depthShader);
-        marbleCube2.draw(simpleShader);
-        planeMetal.draw(simpleShader);
+        //.draw(depthShader);
+        //marbleCube2.draw(simpleShader);
+        //planeMetal.draw(simpleShader);
 
         //transparent
-        for (auto v : vegetation) {
-            v.draw(simpleShader);
+        for (auto& v : vegetation) {
+            //v.draw(simpleShader);
         }
         
         // semi transparent
@@ -333,9 +455,13 @@ int main() {
             }
         );
 
-        for (auto w : windows) {
-            w.draw(simpleShader);
+        for (auto& w : windows) {
+            //w.draw(simpleShader);
         }
+
+        //skybox
+        skybox.texture = skyboxes[gui.skyboxIndex];
+        skybox.draw(skyboxShader);
 
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -416,7 +542,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     if (mouseGUIEnabled)
         return;
 
-    camera.processMouseScroll(yoffset);
+    camera.processMouseScroll(static_cast<float>(yoffset));
 }
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -434,7 +560,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3) {
     float radius = 2.5f;
-    float t = glfwGetTime() * 2.0f;
+    float t = static_cast<float>(glfwGetTime()) * 2.0f;
 
     // Base orbit positions (120 degrees apart)
     glm::vec3 p1{
@@ -481,11 +607,3 @@ void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3) 
     light3.position = glm::vec3(tilt3 * glm::vec4(p3, 1.0f)) + center;
 }
 
-void setViewProjection(std::span<Shader*> shaders, const glm::mat4& view, const glm::mat4& projection) {
-    for (Shader* shader : shaders) {
-        shader->use();
-
-        shader->setMat4("view", view);
-        shader->setMat4("projection", projection);
-    }
-}

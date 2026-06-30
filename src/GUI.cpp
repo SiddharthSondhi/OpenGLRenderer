@@ -32,6 +32,8 @@ namespace GUI {
 		ImGui::Combo("Post-Processing Mode", &gui.postProcessingMode, gui.postProcessingModes.data(), static_cast<int>(gui.postProcessingModes.size()));
 		ImGui::SliderFloat("1 / offset", &gui.convMatrixOffset, 1.0f, 5000.0f);
 
+		ImGui::Combo("SkyBox Texture", &gui.skyboxIndex, gui.skyboxOptions.data(), static_cast<int>(gui.skyboxOptions.size()));
+
 		ImGui::End();
 	}
 

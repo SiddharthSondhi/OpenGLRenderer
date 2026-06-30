@@ -11,7 +11,10 @@
 class Model {
 public:
 	Model(std::string path, bool flipUVs);
-	void draw(Shader& shader);
+	void draw(const Shader& shader) const;
+	void drawInstanced(const Shader& shader, int count) const;
+
+	const std::vector<Mesh>& getMeshes() const;
 
 private:
 	std::vector<Mesh> meshes;

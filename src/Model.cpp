@@ -12,8 +12,10 @@
 
 Model::Model(std::string path, bool flipUVs) {
 	Assimp::Importer import;
-    unsigned int flags{ aiProcess_Triangulate };
+    unsigned int flags{ aiProcess_Triangulate | aiProcess_GenSmoothNormals };
     if (flipUVs) flags |= aiProcess_FlipUVs;
+
+    std::cout << "Loading model: " << path << '\n';
 	const aiScene* scene = import.ReadFile(path, flags);
 	
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -137,7 +139,6 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
         case aiTextureType_DIFFUSE:  
             texture.type = Texture::diffuse;
             break;
-
         case aiTextureType_SPECULAR: 
             texture.type = Texture::specular;
             break;

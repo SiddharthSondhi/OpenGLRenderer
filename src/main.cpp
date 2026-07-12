@@ -3,12 +3,13 @@
 #include "Mesh.h"
 #include "Utils.h"
 #include "VertexData.h"
-#include "Model.h"
 #include "SceneObject.h"
-#include "Colors.h"
 #include "GUI.h"
 #include "Skybox.h"
-#include "InstancedSceneObject.h"
+#include "Scene.h"
+#include "Resources.h"
+#include "SceneBuilder.h"
+#include "LightData.h"
 
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
@@ -47,7 +48,7 @@ float lastMousePosY{ static_cast<float>(windowHeight) / 2 };
 bool firstMouse{ true };
 bool mouseGUIEnabled{ false };
 
-Camera camera{ glm::vec3{30.0f, 5.0f, 15.0f } };
+Camera camera{ glm::vec3{0.0f, 0.0f, 15.0f } };
 
 bool enableFlashLight{ false };
 static glm::vec3 backpackPos{ 31.0f, 3.0f, 0.0f };
@@ -87,7 +88,6 @@ int main() {
         return -1;
     }
 
-
     //setup callbacks
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
@@ -98,18 +98,6 @@ int main() {
     GUI::init(window);
     GUI::Settings gui;
 
-    //Shaders
-    Shader simpleShader("./shaders/simpleVS.glsl", "./shaders/simpleFS.glsl");
-    Shader lightShader("./shaders/lightVS.glsl", "./shaders/lightFS.glsl");
-    Shader objectShader("./shaders/objectVS.glsl", "./shaders/objectFS.glsl");
-    Shader depthShader("./shaders/depthVS.glsl", "./shaders/depthFS.glsl");
-    Shader frameBufferShader("./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl" );
-    Shader skyboxShader("./shaders/skyboxVS.glsl", "./shaders/skyboxFS.glsl");
-    Shader reflectiveShader("./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl");
-    Shader refractiveShader("./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl");
-    Shader explodeNormalsShader("./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl");
-    Shader normalVisShader("./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl");
-    Shader instanceObjectShader("./shaders/instanceObjectVS.glsl", "./shaders/objectFS.glsl");
 
     //framebuffer
     GLuint framebuffer;
@@ -148,16 +136,16 @@ int main() {
     glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
+    
+    //light UBO
+    unsigned int uboLightData;
+    glGenBuffers(1, &uboLightData);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboLightData);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GPUData::LightData), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLightData);
 
-    // textures
-    unsigned int container2Diff{ Utils::loadTextureFromFile("./resources/textures/container2.png") };
-    unsigned int container2Spec{ Utils::loadTextureFromFile("./resources/textures/container2_specular.png") };
-    unsigned int boxMarbleTex{ Utils::loadTextureFromFile("./resources/textures/marble.jpg") };
-    unsigned int planeMetalTex{ Utils::loadTextureFromFile("./resources/textures/metal.png") };
-    unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
-    unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png")};
-
-    std::array<unsigned int, 10> skyboxes  {
+    std::array<unsigned int, 13> skyboxes  {
         0,
         Utils::loadCubemap("./resources/textures/cubemaps/SkyHighFluffyCloud"),
         Utils::loadCubemap("./resources/textures/cubemaps/PlanetaryEarth"),
@@ -167,180 +155,34 @@ int main() {
         Utils::loadCubemap("./resources/textures/cubemaps/CasualDay"),
         Utils::loadCubemap("./resources/textures/cubemaps/DayInTheClouds"),
         Utils::loadCubemap("./resources/textures/cubemaps/DarkStorm"),
-        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight")
+        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space1"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space2"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space3")
     };
 
     // meshes and models
-    Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{container2Diff, Texture::diffuse}, {container2Spec, Texture::specular}} };
-    Mesh lightMesh{ VertexData::cubeTex, {3, 2} };
-    Mesh marbleCubeMesh{ VertexData::cubeTex, {3, 2}, {{boxMarbleTex, Texture::diffuse}} };
-    Mesh planeMesh{ VertexData::planeTex, {3, 2}, {{planeMetalTex, Texture::diffuse}} };
-    Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
-    Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
     Mesh screenQuadMesh{ VertexData::screenQuad, {2, 2}, {{textureColorbuffer, Texture::diffuse}} };
-
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", false };
-    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false };
-    Model planetModel{ "./resources/models/planet/planet.obj", false };
-    Model rockModel{ "./resources/models/rock/rock.obj", true };
 
     Skybox skybox{ VertexData::skyboxVertices, 0};
 
     // scene objects
-    SceneObject backpack{ &backpackModel, backpackPos };
-    backpack.scale = glm::vec3{ .8f };
+    Resources resources;
+    Scene mainScene{ buildMainScene(resources) };
+    Scene planetScene{ buildPlanetScene(resources) };
+    Scene cityScene{ buildCityScene(resources) };
+    Scene countryScene{ buildCountryScene(resources) };
+    Scene refScene{ buildRefScene(resources) };
 
-    glm::vec3 lightPos{ 1.2f, 1.0f, 2.0f };
-    glm::vec3 lightPos2{ -1.2f, 1.0f, 2.0f };
-    SceneObject light1{ &lightMesh, lightPos , glm::vec3{0.2f} };
-    SceneObject light2{ &lightMesh, lightPos2, glm::vec3{0.2f} };
-    SceneObject light3{ &lightMesh, lightPos2, glm::vec3{0.2f} };
-
-    SceneObject marbleCube1{ &marbleCubeMesh, {-1.0f, 0.0f, -31.0f } };
-    SceneObject marbleCube2{ &marbleCubeMesh, { 2.0f, 0.0f, -30.0f } };
-
-    SceneObject planeMetal{ &planeMesh , {0.0f, 0.0f, -30.0f} };
-    planeMetal.scale = glm::vec3{ 1.5f, 1.0f, 1.5f };
-
-    SceneObject countryScene{ &countrySceneModel, {50.0f, 0.0f, -30.0f} };
-    countryScene.rotation = { 0.0f, 90.0f, 0.0f };
-
-    SceneObject cityScene{ &citySceneModel};
-    cityScene.rotation = { -90.0f, 0.0f, 0.0f };
-
-    SceneObject planet{ &planetModel , {0.0f, -3.0f, 0.0f}, glm::vec3{4.0f} };
-
-    std::vector<glm::vec3> vegetationPos{
-        glm::vec3(-2.5f, 0.0f, -28.48f),
-        glm::vec3(1.5f, 0.0f, -27.51f),
-        glm::vec3(0.0f, 0.0f, -29.03f),
-        glm::vec3(-0.3f, 0.0f, -32.3f),
-        glm::vec3(0.5f, 0.0f, -30.6f)
-    };
-
-    std::vector<SceneObject> vegetation{};
-    for (auto pos : vegetationPos) {
-        vegetation.push_back(SceneObject{ &grassMesh, pos });
-    }
-
-    std::vector <glm::vec3> windowsPos{
-        glm::vec3(-2.5f, 0.0f, -29.48f),
-        glm::vec3(-.5f, 0.0f, -28.51f),
-        glm::vec3(1.6f, 0.0f, -25.51f),
-    };
-
-    std::vector<SceneObject> windows{};
-    for (auto pos : windowsPos) {
-        windows.push_back(SceneObject{ &windowMesh, pos });
-    }
-
-    int amount{ 100000 };
-    float radius{ 150.0f };
-    float offset = { 25.0f };
-    
-    std::vector<glm::mat4> modelMats;
-    for (int i{ 0 }; i < amount; i++) {
-        float angle{ glm::radians(static_cast<float>(i) / amount * 360.0f )};
-        float displacement{ (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset };
-        float x{ sin(angle) * radius + displacement };
-        displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
-        float y{ displacement * 0.4f };
-        displacement = (rand() % static_cast<int>(2 * offset * 100)) / 100.0f - offset;
-        float z{ cos(angle) * radius + displacement };
-        float scale = (rand() % 20) / 100.0f + 0.05;
-        float rotAngle = (rand() % 360);
-        
-        glm::mat4 mat{ 1.0f };
-        mat = glm::translate(mat, { x, y, z });
-        mat = glm::rotate(mat, rotAngle, glm::vec3{ 0.4f, 0.6f, 0.8f });
-        mat = glm::scale(mat, glm::vec3{ scale });
-
-        modelMats.push_back(mat);
-    }
-
-    InstancedSceneObject asteroids{ &rockModel, modelMats };
-
+    std::array<Scene*, 5> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene };
 
     // ----------------------------------------Uniforms----------------------------------------------
-    objectShader.use();
-    
-    objectShader.setFloat("material.shininess", 256.0f);
+    resources.objectShader.use();
+    resources.objectShader.setFloat("material.shininess", 256.0f);
 
-    // directional light
-    objectShader.setVec3("dirLight.ambient", { 0.2f, 0.2f, 0.2f });
-    objectShader.setVec3("dirLight.diffuse", { 0.7f, 0.7f, 0.7f });
-    objectShader.setVec3("dirLight.specular", { 1.0f, 1.0f, 1.0f });
+    resources.instanceObjectShader.use();
+    resources.instanceObjectShader.setFloat("material.shininess", 256.0f);
 
-    // point lights
-    objectShader.setFloat("pointLights[0].constant", 1.0f);
-    objectShader.setFloat("pointLights[0].linear", 0.09f);
-    objectShader.setFloat("pointLights[0].quadratic", 0.032f);
-    objectShader.setVec3("pointLights[0].diffuse", Colors::blue);
-    objectShader.setVec3("pointLights[0].specular", Colors::blue);
-
-    objectShader.setFloat("pointLights[1].constant", 1.0f);
-    objectShader.setFloat("pointLights[1].linear", 0.09f);
-    objectShader.setFloat("pointLights[1].quadratic", 0.032f);
-    objectShader.setVec3("pointLights[1].diffuse", Colors::red);
-    objectShader.setVec3("pointLights[1].specular", Colors::red);
-
-    objectShader.setFloat("pointLights[2].constant", 1.0f);
-    objectShader.setFloat("pointLights[2].linear", 0.09f);
-    objectShader.setFloat("pointLights[2].quadratic", 0.032f);
-    objectShader.setVec3("pointLights[2].diffuse", Colors::green);
-    objectShader.setVec3("pointLights[2].specular", Colors::green);
-
-    // spot light
-    objectShader.setFloat("spotLight.constant", 1.0f);
-    objectShader.setFloat("spotLight.linear", 0.022f);
-    objectShader.setFloat("spotLight.quadratic", 0.0019f);
-    objectShader.setVec3("spotLight.ambient",  { 0.2f, 0.2f, 0.2f });
-    objectShader.setVec3("spotLight.diffuse",  { 0.5f, 0.5f, 0.5f });
-    objectShader.setVec3("spotLight.specular", { 1.0f, 1.0f, 1.0f });
-    objectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
-    objectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-
-    instanceObjectShader.use();
-    
-    instanceObjectShader.setFloat("material.shininess", 256.0f);
-
-    // directional light
-    instanceObjectShader.setVec3("dirLight.ambient", { 0.2f, 0.2f, 0.2f });
-    instanceObjectShader.setVec3("dirLight.diffuse", { 0.7f, 0.7f, 0.7f });
-    instanceObjectShader.setVec3("dirLight.specular", { 1.0f, 1.0f, 1.0f });
-
-    // point lights
-    instanceObjectShader.setFloat("pointLights[0].constant", 1.0f);
-    instanceObjectShader.setFloat("pointLights[0].linear", 0.09f);
-    instanceObjectShader.setFloat("pointLights[0].quadratic", 0.032f);
-    instanceObjectShader.setVec3("pointLights[0].diffuse", Colors::blue);
-    instanceObjectShader.setVec3("pointLights[0].specular", Colors::blue);
-
-    instanceObjectShader.setFloat("pointLights[1].constant", 1.0f);
-    instanceObjectShader.setFloat("pointLights[1].linear", 0.09f);
-    instanceObjectShader.setFloat("pointLights[1].quadratic", 0.032f);
-    instanceObjectShader.setVec3("pointLights[1].diffuse", Colors::red);
-    instanceObjectShader.setVec3("pointLights[1].specular", Colors::red);
-
-    instanceObjectShader.setFloat("pointLights[2].constant", 1.0f);
-    instanceObjectShader.setFloat("pointLights[2].linear", 0.09f);
-    instanceObjectShader.setFloat("pointLights[2].quadratic", 0.032f);
-    instanceObjectShader.setVec3("pointLights[2].diffuse", Colors::green);
-    instanceObjectShader.setVec3("pointLights[2].specular", Colors::green);
-
-    // spot light
-    instanceObjectShader.setFloat("spotLight.constant", 1.0f);
-    instanceObjectShader.setFloat("spotLight.linear", 0.022f);
-    instanceObjectShader.setFloat("spotLight.quadratic", 0.0019f);
-    instanceObjectShader.setVec3("spotLight.ambient", { 0.2f, 0.2f, 0.2f });
-    instanceObjectShader.setVec3("spotLight.diffuse", { 0.5f, 0.5f, 0.5f });
-    instanceObjectShader.setVec3("spotLight.specular", { 1.0f, 1.0f, 1.0f });
-    instanceObjectShader.setFloat("spotLight.innerCutOff", glm::cos(glm::radians(12.5f)));
-    instanceObjectShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
-
-    
     // settings
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -362,17 +204,12 @@ int main() {
         glfwPollEvents();
         processInput(window);
 
-
         //before rendering bind to the framebuffer
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glEnable(GL_DEPTH_TEST);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        //update postions
-        orbitLights(light1, light2, light3);
-
 
         // calculate view and projection matrix
         glm::mat4 view{ camera.getViewMatrix() };
@@ -382,86 +219,40 @@ int main() {
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
         glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
 
+        //update scene
+        Scene* currentScene{ scenes[gui.currentSceneIndex] };
+        currentScene->update(deltaTime);
+
+        //upload light UBO
+        mainScene.lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
+        planetScene.lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
+        GPUData::uploadLightData(currentScene->lightData, uboLightData);
 
         // post processing 
-        frameBufferShader.use();
-        frameBufferShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
-        frameBufferShader.setInt("postProcessingMode", gui.postProcessingMode);
-
-
-        //lights
-        lightShader.use();
-
-        lightShader.setVec3("color", Colors::blue);
-        //light1.draw(lightShader);
-
-        lightShader.setVec3("color", Colors::red);
-        //light2.draw(lightShader);
-
-        lightShader.setVec3("color", Colors::green);
-        //light3.draw(lightShader);
-
-        // object shader
-        objectShader.use();
-
-        objectShader.setVec3("dirLight.direction", glm::vec3{ view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f} });
-        objectShader.setVec3("pointLights[0].position", glm::vec3{ view * glm::vec4{light1.position, 1.0f} });
-        objectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light2.position, 1.0f} });
-        objectShader.setVec3("pointLights[2].position", glm::vec3{ view * glm::vec4{light3.position, 1.0f} });
-        objectShader.setVec3("spotLight.position", glm::vec3{ 0.0f });
-        objectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
-        objectShader.setBool("enableFlashLight", enableFlashLight);
-
-        instanceObjectShader.use();
-
-        instanceObjectShader.setVec3("dirLight.direction", glm::vec3{ view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f} });
-        instanceObjectShader.setVec3("pointLights[0].position", glm::vec3{ view * glm::vec4{light1.position, 1.0f} });
-        instanceObjectShader.setVec3("pointLights[1].position", glm::vec3{ view * glm::vec4{light2.position, 1.0f} });
-        instanceObjectShader.setVec3("pointLights[2].position", glm::vec3{ view * glm::vec4{light3.position, 1.0f} });
-        instanceObjectShader.setVec3("spotLight.position", glm::vec3{ 0.0f });
-        instanceObjectShader.setVec3("spotLight.direction", glm::vec3{ view * glm::vec4{camera.front, 0.0f } });
-        instanceObjectShader.setBool("enableFlashLight", enableFlashLight);
+        resources.frameBufferShader.use();
+        resources.frameBufferShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
+        resources.frameBufferShader.setInt("postProcessingMode", gui.postProcessingMode);
 
         //explode normals
-        explodeNormalsShader.use();
-        explodeNormalsShader.setFloat("time", static_cast<float>(glfwGetTime()));
-
-
-        //draw objects
-        //backpack.draw(objectShader);
-        //backpack.draw(normalVisShader);
-        //cityScene.draw(objectShader);
-        //countryScene.draw(objectShader);
+        resources.explodeNormalsShader.use();
+        resources.explodeNormalsShader.setFloat("time", static_cast<float>(glfwGetTime()));
         
-        planet.draw(objectShader);
-        asteroids.draw(instanceObjectShader);
-        
-        // other objects
-        simpleShader.use();
-
-        //.draw(depthShader);
-        //marbleCube2.draw(simpleShader);
-        //planeMetal.draw(simpleShader);
-
-        //transparent
-        for (auto& v : vegetation) {
-            //v.draw(simpleShader);
-        }
+        currentScene->draw();
         
         // semi transparent
-        std::sort(windows.begin(), windows.end(),
-            [](const auto& a, const auto& b) {
-                return glm::length2(camera.position - a.position) > glm::length2(camera.position - b.position);
-            }
-        );
+        //std::sort(windows.begin(), windows.end(),
+        //    [](const auto& a, const auto& b) {
+        //        return glm::length2(camera.position - a.position) > glm::length2(camera.position - b.position);
+        //    }
+        //);
 
-        for (auto& w : windows) {
-            //w.draw(simpleShader);
-        }
+        //for (auto& w : windows) {
+        //    //w.draw(simpleShader);
+        //}
 
         //skybox
         skybox.texture = skyboxes[gui.skyboxIndex];
-        skybox.draw(skyboxShader);
+        skybox.draw(resources.skyboxShader);
 
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -472,7 +263,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT);
 
         // draw screen quad (postprocessing)
-        screenQuadMesh.draw(frameBufferShader);
+        screenQuadMesh.draw(resources.frameBufferShader);
 
         // gui
         GUI::define(gui);
@@ -558,52 +349,4 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 }
 
-void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3) {
-    float radius = 2.5f;
-    float t = static_cast<float>(glfwGetTime()) * 2.0f;
-
-    // Base orbit positions (120 degrees apart)
-    glm::vec3 p1{
-        sin(t) * radius,
-        0.0f,
-        cos(t) * radius
-    };
-
-    glm::vec3 p2{
-        sin(t + 2.0943951f) * radius,
-        0.0f,
-        cos(t + 2.0943951f) * radius
-    };
-
-    glm::vec3 p3{
-        sin(t + 4.1887902f) * radius,
-        0.0f,
-        cos(t + 4.1887902f) * radius
-    };
-
-    // Different orbital planes
-    glm::mat4 tilt1 = glm::rotate(
-        glm::mat4(1.0f),
-        glm::radians(30.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f)
-    );
-
-    glm::mat4 tilt2 = glm::rotate(
-        glm::mat4(1.0f),
-        glm::radians(30.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f)
-    );
-
-    glm::mat4 tilt3 = glm::rotate(
-        glm::mat4(1.0f),
-        glm::radians(30.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f)
-    );
-
-    glm::vec3 center{ backpackPos + glm::vec3{0.0f, 1.0f, 0.0f} };
-
-    light1.position = glm::vec3(tilt1 * glm::vec4(p1, 1.0f)) + center;
-    light2.position = glm::vec3(tilt2 * glm::vec4(p2, 1.0f)) + center;
-    light3.position = glm::vec3(tilt3 * glm::vec4(p3, 1.0f)) + center;
-}
 

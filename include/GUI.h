@@ -1,4 +1,5 @@
 #pragma once
+#include "Scene.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -22,7 +23,7 @@ namespace GUI {
 		float convMatrixOffset{ 500.0f };
 
 		//skybox 
-		std::array<const char*, 10> skyboxOptions{ 
+		std::array<const char*, 13> skyboxOptions{ 
 			"None",
 			"Sky High Fluffy Cloud",
 			"Planetary Earth",
@@ -32,10 +33,23 @@ namespace GUI {
 			"Casual Day",
 			"Day In The Clouds",
 			"Dark Storm",
-			"CoriolisNight" 
+			"CoriolisNight",
+			"Space1",
+			"Space2",
+			"Space3"
 		};
 
 		int skyboxIndex{ 6 };
+
+		// scene
+		int currentSceneIndex{ 0 };
+		std::array<const char*, 5> scenes{
+			"Main",
+			"Planet",
+			"City",
+			"Country",
+			"Reflective"
+		};
 
 	};
 

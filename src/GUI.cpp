@@ -33,6 +33,7 @@ namespace GUI {
 		ImGui::SliderFloat("1 / offset", &gui.convMatrixOffset, 1.0f, 5000.0f);
 
 		ImGui::Combo("SkyBox Texture", &gui.skyboxIndex, gui.skyboxOptions.data(), static_cast<int>(gui.skyboxOptions.size()));
+		ImGui::Combo("Scene", &gui.currentSceneIndex, gui.scenes.data(), static_cast<int>(gui.scenes.size()));
 
 		ImGui::End();
 	}

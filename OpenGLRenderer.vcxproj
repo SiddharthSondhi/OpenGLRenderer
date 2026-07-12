@@ -141,6 +141,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\PointLight.cpp" />
+    <ClCompile Include="src\SceneBuilder.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\glad\glad.c" />
     <ClCompile Include="src\GUI.cpp" />
@@ -155,6 +157,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Model.cpp" />
+    <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\SceneObject.cpp" />
     <ClCompile Include="src\Skybox.cpp" />
@@ -165,8 +168,13 @@
     <ClInclude Include="include\Colors.h" />
     <ClInclude Include="include\GUI.h" />
     <ClInclude Include="include\InstancedSceneObject.h" />
+    <ClInclude Include="include\LightData.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\PointLight.h" />
+    <ClInclude Include="include\Resources.h" />
+    <ClInclude Include="include\Scene.h" />
+    <ClInclude Include="include\SceneBuilder.h" />
     <ClInclude Include="include\SceneObject.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\Skybox.h" />
@@ -182,6 +190,8 @@
     <ClInclude Include="src\VertexData.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\solidColorFS.glsl" />
+    <None Include="shaders\solidColorVS.glsl" />
     <None Include="shaders\depthFS.glsl" />
     <None Include="shaders\depthVS.glsl" />
     <None Include="shaders\explodeNormalsFS.glsl" />

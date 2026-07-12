@@ -173,12 +173,13 @@ int main() {
     Scene cityScene{ buildCityScene(resources) };
     Scene countryScene{ buildCountryScene(resources) };
     Scene refScene{ buildRefScene(resources) };
+    Scene lightScene{ buildLightScene(resources) };
 
-    std::array<Scene*, 5> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene };
+    std::array<Scene*, 6> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene };
 
     // ----------------------------------------Uniforms----------------------------------------------
     resources.objectShader.use();
-    resources.objectShader.setFloat("material.shininess", 256.0f);
+    resources.objectShader.setFloat("material.shininess", 400.0f);
 
     resources.instanceObjectShader.use();
     resources.instanceObjectShader.setFloat("material.shininess", 256.0f);
@@ -224,8 +225,7 @@ int main() {
         currentScene->update(deltaTime);
 
         //upload light UBO
-        mainScene.lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
-        planetScene.lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
+        currentScene->lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
         GPUData::uploadLightData(currentScene->lightData, uboLightData);
 
         // post processing 

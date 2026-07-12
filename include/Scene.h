@@ -6,6 +6,7 @@
 #include "PointLight.h"
 #include "LightData.h"
 #include "Camera.h"
+#include "DirectionalLight.h"
 
 #include <vector>
 #include <unordered_map>
@@ -48,6 +49,7 @@ public:
 	void draw() const;
 
 	GPUData::LightData lightData;
+	DirectionalLight dirLight;
 
 private:
 	std::vector<RenderItem> objects;

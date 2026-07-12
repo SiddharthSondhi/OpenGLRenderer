@@ -92,7 +92,10 @@ void Scene::updateLightData() {
 	glm::mat4 view{ camera.getViewMatrix() };
 
 	//directional light
-	lightData.dirLight.direction = view * glm::vec4{ -0.3f, -1.0f, -0.2f , 0.0f };
+	lightData.dirLight.direction = view * glm::vec4{ dirLight.direction, 1.0f };
+	lightData.dirLight.ambient = glm::vec4{ dirLight.ambient, 1.0f };
+	lightData.dirLight.diffuse = glm::vec4{ dirLight.diffuse, 1.0f };
+	lightData.dirLight.specular = glm::vec4{ dirLight.specular, 1.0f };
 
 	// point lights
 	for (size_t i{ 0 }; i < pointLights.size(); i++) {

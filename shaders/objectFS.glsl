@@ -100,8 +100,8 @@ vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 
 	float diff = max(dot(normal, lightDir), 0.0);
 
 	//specular 
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
 	//combine results
 	vec3 ambient  = vec3(light.ambient)  * vec3(texDiff);
@@ -123,8 +123,8 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec4 texDiff, v
     float diff = max(dot(normal, lightDir), 0.0);
 
     //specular
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     // attenuation
     float distance = length(vec3(light.position) - fs_in.fragPos);
@@ -147,8 +147,8 @@ vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec
 	float diff = max(dot(normal, fragToLightDir), 0.0);
 
 	//specular
-	vec3 reflectDir = reflect(-fragToLightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 halfwayDir = normalize(fragToLightDir + viewDir);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
 	//attenuation
 	float distance = length(vec3(light.position) - fs_in.fragPos);

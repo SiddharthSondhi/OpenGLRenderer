@@ -168,3 +168,16 @@ Scene buildRefScene(Resources& r) {
 
     return scene;
 }
+
+Scene buildLightScene(Resources& r) {
+    Scene scene;
+
+    //scene.dirLight = { Colors::white };
+    SceneObject light{ &r.lightMesh, {0, 1, 0}, glm::vec3{0.2f} };
+    scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.lightShader);
+
+    SceneObject plane{ &r.planeMesh };
+    scene.addObject("plane", plane, &r.objectShader);
+
+    return scene;
+}

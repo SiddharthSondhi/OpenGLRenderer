@@ -166,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="include\Camera.h" />
     <ClInclude Include="include\Colors.h" />
+    <ClInclude Include="include\DirectionalLight.h" />
     <ClInclude Include="include\GUI.h" />
     <ClInclude Include="include\InstancedSceneObject.h" />
     <ClInclude Include="include\LightData.h" />

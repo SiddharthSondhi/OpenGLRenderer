@@ -8,3 +8,4 @@ Scene buildCityScene(Resources& r);
 Scene buildCountryScene(Resources& r);
 Scene buildMainScene(Resources& r);
 Scene buildRefScene(Resources& r);
+Scene buildLightScene(Resources& r);

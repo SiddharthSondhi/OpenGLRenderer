@@ -105,16 +105,15 @@ namespace VertexData {
          -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left  
     };
 
-    inline const std::vector<float> planeTex  {
-        // positions          // texture Coords 
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
-        -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+    inline const std::vector<float> plane{
+        // positions            // normals         // tex coords
+         5.0f, -0.5f,  5.0f,    0.0f, 1.0f, 0.0f,  2.0f, 0.0f,
+        -5.0f, -0.5f, -5.0f,    0.0f, 1.0f, 0.0f,  0.0f, 2.0f,
+        -5.0f, -0.5f,  5.0f,    0.0f, 1.0f, 0.0f,  0.0f, 0.0f,
 
-         5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
-        
-         5.0f, -0.5f, -5.0f,  2.0f, 2.0f,
-         - 5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+         5.0f, -0.5f,  5.0f,    0.0f, 1.0f, 0.0f,  2.0f, 0.0f,
+         5.0f, -0.5f, -5.0f,    0.0f, 1.0f, 0.0f,  2.0f, 2.0f,
+        -5.0f, -0.5f, -5.0f,    0.0f, 1.0f, 0.0f,  0.0f, 2.0f,
     };
 
     inline const std::vector<float> transparent = {

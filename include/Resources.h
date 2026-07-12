@@ -29,12 +29,13 @@ struct Resources {
     unsigned int planeMetalTex{ Utils::loadTextureFromFile("./resources/textures/metal.png") };
     unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
     unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png") };
+    unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.png") };
 
     // meshes
     Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{container2Diff, Texture::diffuse}, {container2Spec, Texture::specular}} };
     Mesh lightMesh{ VertexData::cubeTex, {3, 2} };
     Mesh marbleCubeMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{boxMarbleTex, Texture::diffuse}} };
-    Mesh planeMesh{ VertexData::planeTex, {3, 2}, {{planeMetalTex, Texture::diffuse}} };
+    Mesh planeMesh{ VertexData::plane, {3, 3, 2}, {{woodTex, Texture::diffuse}} };
     Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
     Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
 
@@ -46,4 +47,5 @@ struct Resources {
     Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false };
     Model planet2Model{ "./resources/models/planet2/pbr_dark_planet_4.glb", false };
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", false };
+
 };

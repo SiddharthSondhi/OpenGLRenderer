@@ -43,12 +43,13 @@ namespace GUI {
 
 		// scene
 		int currentSceneIndex{ 0 };
-		std::array<const char*, 5> scenes{
+		std::array<const char*, 6> scenes{
 			"Main",
 			"Planet",
 			"City",
 			"Country",
-			"Reflective"
+			"Reflective",
+			"Light"
 		};
 
 	};

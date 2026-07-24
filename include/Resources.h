@@ -5,7 +5,13 @@
 #include "Shader.h"
 #include "Utils.h"
 #include "VertexData.h"
-#include "Skybox.h"
+#include "Colors.h"
+#include "SolidColorMaterial.h"
+#include "PhongMaterial.h"
+#include "BasicMaterial.h"
+
+
+#include <array>
 
 struct Resources {
 	// shaders
@@ -14,38 +20,67 @@ struct Resources {
     Shader simpleShader{ "./shaders/simpleVS.glsl", "./shaders/simpleFS.glsl" };
     Shader lightShader{ "./shaders/lightVS.glsl", "./shaders/lightFS.glsl" };
     Shader depthShader{"./shaders/depthVS.glsl", "./shaders/depthFS.glsl"};
-    Shader frameBufferShader{"./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl"};
-    Shader skyboxShader{"./shaders/skyboxVS.glsl", "./shaders/skyboxFS.glsl"};
     Shader reflectiveShader{"./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl"};
     Shader refractiveShader{"./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl"};
     Shader explodeNormalsShader{"./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl"};
     Shader normalVisShader{"./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl"};
     Shader solidColorShader{ "./shaders/solidColorVS.glsl", "./shaders/solidColorFS.glsl" };
 
+    //skyboxes
+    std::array<unsigned int, 13> skyboxes{
+        0,
+        Utils::loadCubemap("./resources/textures/cubemaps/SkyHighFluffyCloud"),
+        Utils::loadCubemap("./resources/textures/cubemaps/PlanetaryEarth"),
+        Utils::loadCubemap("./resources/textures/cubemaps/MegaSun"),
+        Utils::loadCubemap("./resources/textures/cubemaps/highFantasy"),
+        Utils::loadCubemap("./resources/textures/cubemaps/underTheSea"),
+        Utils::loadCubemap("./resources/textures/cubemaps/CasualDay"),
+        Utils::loadCubemap("./resources/textures/cubemaps/DayInTheClouds"),
+        Utils::loadCubemap("./resources/textures/cubemaps/DarkStorm"),
+        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space1"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space2"),
+        Utils::loadCubemap("./resources/textures/cubemaps/space3")
+    };
+
     // textures
-    unsigned int container2Diff{ Utils::loadTextureFromFile("./resources/textures/container2.png") };
+    unsigned int container2Diff{ Utils::loadTextureFromFile("./resources/textures/container2.png", true) };
     unsigned int container2Spec{ Utils::loadTextureFromFile("./resources/textures/container2_specular.png") };
-    unsigned int boxMarbleTex{ Utils::loadTextureFromFile("./resources/textures/marble.jpg") };
-    unsigned int planeMetalTex{ Utils::loadTextureFromFile("./resources/textures/metal.png") };
+    unsigned int boxMarbleTex{ Utils::loadTextureFromFile("./resources/textures/marble.jpg", true) };
+    unsigned int planeMetalTex{ Utils::loadTextureFromFile("./resources/textures/metal.png", true) };
     unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
     unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png") };
-    unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.png") };
+    unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.jpg", true) };
+
+
+    // materials
+    SolidColorMaterial redMat{ lightShader, Colors::red };
+    SolidColorMaterial blueMat{ lightShader, Colors::blue };
+    SolidColorMaterial greenMat{ lightShader, Colors::green };
+    SolidColorMaterial whiteMat{ lightShader, Colors::white };
+    PhongMaterial marbleMat{ objectShader, {{boxMarbleTex, Texture::diffuse}} };
+    PhongMaterial woodMat{ objectShader, {{woodTex, Texture::diffuse}} };
+    BasicMaterial normalsVisMaterial{ normalVisShader };
+    BasicMaterial reflectiveMat{ reflectiveShader };
+    BasicMaterial refractiveMat{ refractiveShader };
+    BasicMaterial depthMat{ depthShader };
 
     // meshes
-    Mesh containerMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{container2Diff, Texture::diffuse}, {container2Spec, Texture::specular}} };
-    Mesh lightMesh{ VertexData::cubeTex, {3, 2} };
-    Mesh marbleCubeMesh{ VertexData::cubeNormalsTexture, {3, 3, 2}, {{boxMarbleTex, Texture::diffuse}} };
-    Mesh planeMesh{ VertexData::plane, {3, 3, 2}, {{woodTex, Texture::diffuse}} };
-    Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
-    Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
+    Mesh cubeMesh{ VertexData::cube, {3, 3, 2} };
+    Mesh planeMesh{ VertexData::plane, {3, 3, 2}};
+    //Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
+    //Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
 
 	// models
-	Model planetModel{ "./resources/models/planet/planet.obj", false };
-	Model asteroidModel{ "./resources/models/rock/rock.obj", true };
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", false };
-    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false };
-    Model planet2Model{ "./resources/models/planet2/pbr_dark_planet_4.glb", false };
-    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", false };
+	Model planetModel{ "./resources/models/planet/planet.obj", false, objectShader };
+	Model asteroidModel{ "./resources/models/rock/rock.obj", true, instanceObjectShader };
+    Model backpackModel{ "./resources/models/backpack/backpack.obj", false, objectShader };
+    Model lightModel{ cubeMesh, whiteMat };
+    Model cubeModel{ cubeMesh, marbleMat };
+    Model planeModel{ planeMesh, woodMat };
+    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true, objectShader };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false, objectShader };
+    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", false, objectShader };
+    //Model planet2Model{ "./resources/models/planet2/pbr_dark_planet_4.glb", false };
 
 };

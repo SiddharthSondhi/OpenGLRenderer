@@ -5,9 +5,8 @@
 
 class PointLight {
 public:
-	SceneObject lightObj;
+	SceneObject obj;
 	glm::vec3 color;
 
-	PointLight(SceneObject lightObj, glm::vec3 color);
-	void draw(Shader& shader) const;
+	PointLight(SceneObject obj, glm::vec3 color);
 };

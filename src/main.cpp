@@ -1,29 +1,18 @@
 #include "Shader.h"
 #include "Camera.h"
-#include "Mesh.h"
-#include "Utils.h"
-#include "VertexData.h"
-#include "SceneObject.h"
 #include "GUI.h"
-#include "Skybox.h"
 #include "Scene.h"
 #include "Resources.h"
 #include "SceneBuilder.h"
-#include "LightData.h"
+#include "Renderer.h"
 
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/norm.hpp>
 
 #include <iostream>
 #include <array>
-#include <cmath>
-
 
 //prototypes
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
@@ -31,9 +20,6 @@ void processInput(GLFWwindow* window);
 void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-void orbitLights(SceneObject& light1, SceneObject& light2, SceneObject& light3);
-
 
 //global variables
 int windowWidth;
@@ -47,11 +33,11 @@ float lastMousePosX{ static_cast<float>(windowWidth) / 2 };
 float lastMousePosY{ static_cast<float>(windowHeight) / 2 };  
 bool firstMouse{ true };
 bool mouseGUIEnabled{ false };
+GUI::Settings gui;
 
 Camera camera{ glm::vec3{0.0f, 0.0f, 15.0f } };
 
 bool enableFlashLight{ false };
-static glm::vec3 backpackPos{ 31.0f, 3.0f, 0.0f };
 
 
 int main() {
@@ -96,88 +82,26 @@ int main() {
 
     // initialize gui
     GUI::init(window);
-    GUI::Settings gui;
-
-
-    //framebuffer
-    GLuint framebuffer;
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-    // generate texture
-    GLuint textureColorbuffer;
-    glGenTextures(1, &textureColorbuffer);
-    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // attach it to currently bound framebuffer object
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-    //renderbuffer for depth/stencil testing
-    GLuint rbo;
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowWidth, windowHeight);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    //matrices UBO
-    unsigned int uboMatrices;
-    glGenBuffers(1, &uboMatrices);
-    glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-    glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboMatrices);
     
-    //light UBO
-    unsigned int uboLightData;
-    glGenBuffers(1, &uboLightData);
-    glBindBuffer(GL_UNIFORM_BUFFER, uboLightData);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(GPUData::LightData), NULL, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboLightData);
-
-    std::array<unsigned int, 13> skyboxes  {
-        0,
-        Utils::loadCubemap("./resources/textures/cubemaps/SkyHighFluffyCloud"),
-        Utils::loadCubemap("./resources/textures/cubemaps/PlanetaryEarth"),
-        Utils::loadCubemap("./resources/textures/cubemaps/MegaSun"),
-        Utils::loadCubemap("./resources/textures/cubemaps/highFantasy"),
-        Utils::loadCubemap("./resources/textures/cubemaps/underTheSea"),
-        Utils::loadCubemap("./resources/textures/cubemaps/CasualDay"),
-        Utils::loadCubemap("./resources/textures/cubemaps/DayInTheClouds"),
-        Utils::loadCubemap("./resources/textures/cubemaps/DarkStorm"),
-        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight"),
-        Utils::loadCubemap("./resources/textures/cubemaps/space1"),
-        Utils::loadCubemap("./resources/textures/cubemaps/space2"),
-        Utils::loadCubemap("./resources/textures/cubemaps/space3")
-    };
-
-    // meshes and models
-    Mesh screenQuadMesh{ VertexData::screenQuad, {2, 2}, {{textureColorbuffer, Texture::diffuse}} };
-
-    Skybox skybox{ VertexData::skyboxVertices, 0};
+    //Renderer
+    Renderer renderer;
+    renderer.setUpPostProcessing(windowWidth, windowHeight);
+    renderer.createLightDataUBO();
+    renderer.createMatricesUBO();
 
     // scene objects
     Resources resources;
+
     Scene mainScene{ buildMainScene(resources) };
     Scene planetScene{ buildPlanetScene(resources) };
     Scene cityScene{ buildCityScene(resources) };
     Scene countryScene{ buildCountryScene(resources) };
     Scene refScene{ buildRefScene(resources) };
     Scene lightScene{ buildLightScene(resources) };
+    Scene shadowScene{ buildShadowScene(resources) };
 
-    std::array<Scene*, 6> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene };
+    std::array<Scene*, 7> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene };
 
-    // ----------------------------------------Uniforms----------------------------------------------
     resources.objectShader.use();
     resources.objectShader.setFloat("material.shininess", 400.0f);
 
@@ -205,65 +129,17 @@ int main() {
         glfwPollEvents();
         processInput(window);
 
-        //before rendering bind to the framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glEnable(GL_DEPTH_TEST);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        // calculate view and projection matrix
-        glm::mat4 view{ camera.getViewMatrix() };
-        glm::mat4 projection{ glm::perspective(glm::radians(camera.zoom), static_cast<float>(windowWidth) / windowHeight, 0.1f, 500.0f) };
-
-        glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(view));
-        glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(projection));
-
         //update scene
+        renderer.updateAndUploadMatrices(windowWidth, windowHeight);
         Scene* currentScene{ scenes[gui.currentSceneIndex] };
         currentScene->update(deltaTime);
-
-        //upload light UBO
-        currentScene->lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
-        GPUData::uploadLightData(currentScene->lightData, uboLightData);
-
-        // post processing 
-        resources.frameBufferShader.use();
-        resources.frameBufferShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
-        resources.frameBufferShader.setInt("postProcessingMode", gui.postProcessingMode);
-
-        //explode normals
-        resources.explodeNormalsShader.use();
-        resources.explodeNormalsShader.setFloat("time", static_cast<float>(glfwGetTime()));
         
-        currentScene->draw();
-        
-        // semi transparent
-        //std::sort(windows.begin(), windows.end(),
-        //    [](const auto& a, const auto& b) {
-        //        return glm::length2(camera.position - a.position) > glm::length2(camera.position - b.position);
-        //    }
-        //);
+        //update light data
+        renderer.updateLightData(*currentScene, enableFlashLight);
+        renderer.uploadLightData();
 
-        //for (auto& w : windows) {
-        //    //w.draw(simpleShader);
-        //}
-
-        //skybox
-        skybox.texture = skyboxes[gui.skyboxIndex];
-        skybox.draw(resources.skyboxShader);
-
-        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer color texture
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
-        
-        // clear all relevant buffers
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw screen quad (postprocessing)
-        screenQuadMesh.draw(resources.frameBufferShader);
+        //render scene
+        renderer.render(*currentScene, resources);
 
         // gui
         GUI::define(gui);
@@ -336,8 +212,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     camera.processMouseScroll(static_cast<float>(yoffset));
 }
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods){
     if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         enableFlashLight = !enableFlashLight;
     }
@@ -346,7 +221,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         mouseGUIEnabled = !mouseGUIEnabled;
         glfwSetInputMode(window, GLFW_CURSOR, mouseGUIEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
     }
-
 }
 
 

@@ -8,6 +8,11 @@
 #include <sstream>
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) {
+	std::cout << "Compiling Shader \n\tvertex:   " << vertexPath
+		<< "\n\tfragment: " << fragmentPath << "\n";
+	if (geometryPath)
+		std::cout << "\tgeomtery: " << geometryPath << "\n";
+
 	std::string vertexCodeStr, fragmentCodeStr, geometryCodeStr;
 	std::ifstream vShaderFile, fShaderFile, gShaderFile;
 

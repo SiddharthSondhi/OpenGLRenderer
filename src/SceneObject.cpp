@@ -2,8 +2,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <iostream>
-
 
 SceneObject::SceneObject(Model* model, glm::vec3 postion, glm::vec3 scale, glm::vec3 rotation)
 	: model{ model },
@@ -11,33 +9,32 @@ SceneObject::SceneObject(Model* model, glm::vec3 postion, glm::vec3 scale, glm::
 	scale{ scale },
 	rotation{ rotation } {}
 
-SceneObject::SceneObject(Mesh* mesh, glm::vec3 postion, glm::vec3 scale, glm::vec3 rotation)
-	: mesh{ mesh },
-	position{ postion },
-	scale{ scale },
-	rotation{ rotation } {}
+SceneObject::SceneObject(Model* model, const Material& materialOverride)
+	: model{ model },
+	materialOverride {materialOverride.clone()} {}
 
-void SceneObject::draw(const Shader& shader) const {
-	shader.use();
+SceneObject::SceneObject(const SceneObject& other) 
+	: model { other.model },
+	position{ other.position },
+	scale{ other.scale },
+	rotation{ other.rotation },
+	materialOverride {other.materialOverride ? other.materialOverride->clone() : nullptr}
+{}
 
-	//update model matrix
-	glm::mat4 model{ getModelMatrix() };
-	shader.setMat4("model", model);
-
-	//update normal matrix
-	glm::mat3 normalMat = glm::transpose(glm::inverse(camera.getViewMatrix() * model));
-	shader.setMat3("normalMat", normalMat);
-
-	if (this->model) {
-		this->model->draw(shader);
+SceneObject& SceneObject::operator=(const SceneObject& other) {
+	if (this == &other) {
+		return *this;
 	}
-	else if (mesh) {
-		mesh->draw(shader);
-	}
-	else {
-		std::cout << "SCENE_OBJECT::NO VALID MESH OR MODEL" << "\n";
-	}
+
+	model = other.model;
+	position = other.position;
+	scale = other.scale;
+	rotation = other.rotation;
+	materialOverride = other.materialOverride ? other.materialOverride->clone() : nullptr;
+
+	return *this;
 }
+
 
 glm::mat4 SceneObject::getModelMatrix() const {
 	glm::mat4 model{ 1.0f };
@@ -55,3 +52,20 @@ glm::mat4 SceneObject::getModelMatrix() const {
 
 	return model;
 }
+
+void SceneObject::setMaterialOverride(const Material& material) {
+	materialOverride = material.clone();
+}
+
+void SceneObject::resetMaterialOverride() {
+	materialOverride.reset();
+}
+
+const Material* SceneObject::getMaterialOverride() const {
+	return materialOverride.get();
+}
+
+const Model* SceneObject::getModel() const {
+	return model;
+}
+

@@ -47,10 +47,4 @@ namespace GPUData {
 		std::array<PointLightData, MAX_NUMBER_POINT_LIGHTS> pointLights;
 		glm::vec4 enableFlashLight{ 0.0f };
 	};
-
-	inline void uploadLightData(LightData& lightData, const unsigned int UBO) {
-		glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightData), reinterpret_cast<void*>(&lightData));
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
 };

@@ -14,13 +14,9 @@
 class InstancedSceneObject {
 public:
 	Model* model{ nullptr };
-	Mesh* mesh{ nullptr };
-
 	int count;
 
 	InstancedSceneObject(Model* model, const std::vector<glm::mat4>& modelMatrices);
-	InstancedSceneObject(Mesh* mesh, const std::vector<glm::mat4>& modelMatrices);
-	void draw(const Shader& shader) const;
 
 private:
 	unsigned int instanceVBO{ 0 };

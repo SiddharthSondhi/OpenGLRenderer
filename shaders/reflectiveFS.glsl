@@ -13,5 +13,4 @@ void main(){
 	vec3 I = normalize(fragPos); 
 	vec3 R = reflect(I, normalize(normal));
 	fragColor =  texture(skybox, R);
-	
 }

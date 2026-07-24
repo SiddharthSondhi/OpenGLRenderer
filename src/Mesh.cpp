@@ -1,13 +1,16 @@
 #include "Mesh.h"
+
+#include <glad/glad.h>
+
 #include <numeric>
 #include <iostream>
 
 Mesh::Mesh(const std::vector<float>& vertices,
 	const std::vector<unsigned int>& attribSizes,
-	const std::vector<Texture>& textures,
+	size_t materialIndex,
 	const std::vector<unsigned int>& indices)
 	:
-	textures{ textures },
+	materialIndex {materialIndex},
 	indicesCount{ static_cast<int>(indices.size()) },
 	verticesCount{ static_cast<int>(vertices.size() / std::accumulate(attribSizes.begin(), attribSizes.end(), 0)) },
 	usingEBO{ !indices.empty() },
@@ -47,10 +50,7 @@ Mesh::Mesh(const std::vector<float>& vertices,
 	glBindVertexArray(0);
 }
 
-void Mesh::draw(const Shader& shader) const{
-	activateTextures(shader);
-
-	//draw mesh
+void Mesh::drawGeometry() const{
 	glBindVertexArray(VAO);
 
 	if (usingEBO)
@@ -58,14 +58,10 @@ void Mesh::draw(const Shader& shader) const{
 	else 
 		glDrawArrays(GL_TRIANGLES, 0, verticesCount);
 
-
 	glBindVertexArray(0);
 }
 
-
-void Mesh::drawInstanced(const Shader& shader, int count) const {
-	activateTextures(shader);
-
+void Mesh::drawInstancedGeometry(int count) const {
 	//draw instanced mesh
 	glBindVertexArray(VAO);
 
@@ -77,40 +73,14 @@ void Mesh::drawInstanced(const Shader& shader, int count) const {
 	glBindVertexArray(0);
 }
 
-void Mesh::activateTextures(const Shader& shader) const {
-	shader.use();
-
-	int diffuseNum{ 1 }, specularNum{ 1 };
-
-	// activate texture units binding textures and setting sampler uniforms in the shader to the unit number
-	for (int i{ 0 }; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + i);
-
-		// uniform name format : texture_typeN 
-		std::string uniformName{ "texture_" };
-		switch (textures[i].type) {
-
-		case Texture::diffuse:
-			uniformName += "diffuse" + std::to_string(diffuseNum++);
-			break;
-		case Texture::specular:
-			uniformName += "specular" + std::to_string(specularNum++);
-			break;
-		}
-
-		shader.setInt(uniformName, i);
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
-	}
-
-	glActiveTexture(GL_TEXTURE0);
-}
-
-
-
 unsigned int Mesh::getVAO() const {
 	return VAO;
 }
 
 int Mesh::getAttribCount() const {
 	return attribCount;
+}
+
+size_t Mesh::getMaterialIndex() const {
+	return materialIndex;
 }

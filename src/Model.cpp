@@ -1,6 +1,7 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "Utils.h"
+#include "PhongMaterial.h"
 
 #include <glm/glm.hpp>
 
@@ -10,10 +11,11 @@
 
 #include <iostream>
 
-Model::Model(std::string path, bool flipUVs) {
+Model::Model(std::string path, bool flipUVs, const Shader& shader) {
 	Assimp::Importer import;
     unsigned int flags{ aiProcess_Triangulate | aiProcess_GenSmoothNormals };
     if (flipUVs) flags |= aiProcess_FlipUVs;
+
 
     std::cout << "Loading model: " << path << '\n';
 	const aiScene* scene = import.ReadFile(path, flags);
@@ -24,8 +26,32 @@ Model::Model(std::string path, bool flipUVs) {
 	}
 
     directory = path.substr(0, path.find_last_of('/'));
+    processMaterials(scene, shader);
 	processNode(scene->mRootNode, scene);
+}
 
+Model::Model(const Mesh& mesh, const Material& material) {
+    meshes.push_back(mesh);
+    materials.push_back(material.clone());
+}
+
+
+void Model::processMaterials(const aiScene* scene, const Shader& shader) {
+    materials.reserve(scene->mNumMaterials);
+
+    for (unsigned int i{ 0 }; i < scene->mNumMaterials; i++) {
+        aiMaterial* assimpMat{ scene->mMaterials[i] };
+
+        std::vector<Texture> textures;
+
+        std::vector<Texture> diffuseMaps = loadMaterialTextures(assimpMat, aiTextureType_DIFFUSE, scene);
+        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+
+        std::vector<Texture> specularMaps = loadMaterialTextures(assimpMat, aiTextureType_SPECULAR, scene);
+        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+        materials.emplace_back(std::make_unique<PhongMaterial>(shader, std::move(textures)));
+    }
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene) {
@@ -40,6 +66,7 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
         processNode(node->mChildren[i], scene);
     }
 }
+
 
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<float> vertices;
@@ -78,17 +105,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         }
     }
 
-    // process material
-    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-    std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, scene);
-    textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-
-    std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, scene);
-    textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-
-    return Mesh(vertices, attribSizes, textures, indices);
+    return Mesh(vertices, attribSizes, mesh->mMaterialIndex, indices);
 }
+
 
 
 std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene) {
@@ -111,6 +130,17 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
         }
 
         Texture texture;
+        bool gammaCorrected{ false };
+
+        switch (type) {
+        case aiTextureType_DIFFUSE:
+            texture.type = Texture::diffuse;
+            gammaCorrected = true;
+            break;
+        case aiTextureType_SPECULAR:
+            texture.type = Texture::specular;
+            break;
+        }
 
         // if texture is embedded
         if (textureName[0] == '*'){
@@ -120,9 +150,9 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
                 aiTexture* embeddedTexture = scene->mTextures[textureIndex];
 
                 texture.id = Utils::loadTextureFromMemory(
-                    reinterpret_cast<unsigned char*>(embeddedTexture->pcData),
-                    embeddedTexture->mWidth
-                );
+                    reinterpret_cast<unsigned char*>(embeddedTexture->pcData), 
+                    embeddedTexture->mWidth, 
+                    gammaCorrected);
             }
             else
             {
@@ -132,18 +162,9 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
         }
         // otherwise load from file
         else{
-            texture.id = Utils::loadTextureFromFile(directory + "/" + textureName);
+            texture.id = Utils::loadTextureFromFile(directory + "/" + textureName, gammaCorrected);
         }
         
-        switch (type) {
-        case aiTextureType_DIFFUSE:  
-            texture.type = Texture::diffuse;
-            break;
-        case aiTextureType_SPECULAR: 
-            texture.type = Texture::specular;
-            break;
-        }
-
         textures.push_back(texture);
         loadedTextures[textureName] = texture;
     }
@@ -152,20 +173,13 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 }
 
 
-void Model::draw(const Shader& shader) const{
-    for (const Mesh& m : meshes) {
-        m.draw(shader);
-    }
-}
-
-void Model::drawInstanced(const Shader& shader, int count) const{
-    for (const Mesh& m : meshes) {
-        m.drawInstanced(shader, count);
-    }
-}
-
 const std::vector<Mesh>& Model::getMeshes() const {
     return meshes;
 }
+
+const std::vector<std::unique_ptr<Material>>& Model::getMaterials() const {
+    return materials;
+}
+
 
 

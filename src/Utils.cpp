@@ -10,7 +10,8 @@
 #include <vector>
 
 namespace Utils {
-    unsigned int loadTextureFromFile(std::string path) {
+    unsigned int loadTextureFromFile(std::string path, bool gammaCorrected) {
+        std::cout << "Loading texture: " << path << "\n";
         unsigned int textureID;
         glGenTextures(1, &textureID);
 
@@ -18,20 +19,31 @@ namespace Utils {
         unsigned char* data{ stbi_load(path.c_str(), &width, &height, &nrComponents, 0) };
 
         if (data) {
-            GLenum format{ GL_RGB };
-            if (nrComponents == 1)
-                format = GL_RED;
-            else if (nrComponents == 3)
-                format = GL_RGB;
-            else if (nrComponents == 4)
-                format = GL_RGBA;
+            GLenum internalFormat{ GL_RGB };
+            GLenum dataFormat{ GL_RGB };
+
+            int textureWrapMode{ GL_REPEAT };
+
+            if (nrComponents == 1) {
+                dataFormat = GL_RED;
+                internalFormat = GL_RED;
+            }
+            else if (nrComponents == 3) {
+                dataFormat = GL_RGB;
+                internalFormat = gammaCorrected ? GL_SRGB : GL_RGB;
+            }
+            else if (nrComponents == 4) {
+                dataFormat = GL_RGBA;
+                internalFormat = gammaCorrected ? GL_SRGB_ALPHA : GL_RGBA;
+                textureWrapMode = GL_CLAMP_TO_EDGE;
+            }
 
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureWrapMode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureWrapMode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
@@ -43,29 +55,39 @@ namespace Utils {
         return textureID;
     }
 
-    unsigned int Utils::loadTextureFromMemory(const unsigned char* fileData, unsigned int fileSize){
+    unsigned int Utils::loadTextureFromMemory(const unsigned char* fileData, unsigned int fileSize, bool gammaCorrected){
         unsigned int textureID;
         glGenTextures(1, &textureID);
 
         int width, height, nrComponents;
         unsigned char* data{ stbi_load_from_memory(fileData, fileSize, &width, &height, &nrComponents, 0) };
 
-        if (data){
-            GLenum format = GL_RGB;
+        if (data) {
+            GLenum internalFormat{ GL_RGB };
+            GLenum dataFormat{ GL_RGB };
 
-            if (nrComponents == 1)
-                format = GL_RED;
-            else if (nrComponents == 3)
-                format = GL_RGB;
-            else if (nrComponents == 4)
-                format = GL_RGBA;
+            int textureWrapMode{ GL_REPEAT };
+
+            if (nrComponents == 1) {
+                dataFormat = GL_RED;
+                internalFormat = GL_RED;
+            }
+            else if (nrComponents == 3) {
+                dataFormat = GL_RGB;
+                internalFormat = gammaCorrected ? GL_SRGB : GL_RGB;
+            }
+            else if (nrComponents == 4) {
+                dataFormat = GL_RGBA;
+                internalFormat = gammaCorrected ? GL_SRGB_ALPHA : GL_RGBA;
+                textureWrapMode = GL_CLAMP_TO_EDGE;
+            }
 
             glBindTexture(GL_TEXTURE_2D, textureID);
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
 
             glGenerateMipmap(GL_TEXTURE_2D);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureWrapMode);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureWrapMode);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
@@ -78,7 +100,17 @@ namespace Utils {
     }
 
 
-    unsigned int loadCubemap(std::vector<std::string> faces) {
+    unsigned int loadCubemap(std::string path) {
+        std::cout << "Loading cubemap: " << path << "\n";
+        std::vector<std::string> faces{
+            path + "/px.png",
+            path + "/nx.png",
+            path + "/py.png",
+            path + "/ny.png",
+            path + "/pz.png",
+            path + "/nz.png"
+        };
+
         unsigned int textureID;
         glGenTextures(1, &textureID);
         glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
@@ -110,18 +142,5 @@ namespace Utils {
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
         return textureID;
-    }
-
-    unsigned int loadCubemap(std::string folder) {
-        std::vector<std::string> faces{
-            folder + "/px.png",
-            folder + "/nx.png",
-            folder + "/py.png",
-            folder + "/ny.png",
-            folder + "/pz.png",
-            folder + "/nz.png"
-        };
-
-        return loadCubemap(faces);
     }
 }

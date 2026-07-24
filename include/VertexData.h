@@ -3,7 +3,7 @@
 #include <vector>
 
 namespace VertexData {
-    inline const std::vector<float> cubeNormalsTexture{
+    inline const std::vector<float> cube{
         // Back (-Z)
         -0.5f,-0.5f,-0.5f,  0,0,-1,  0,0,
         -0.5f, 0.5f,-0.5f,  0,0,-1,  0,1,
@@ -41,68 +41,22 @@ namespace VertexData {
          0.5f,-0.5f,-0.5f,  1,0,0,   0,0,
 
          // Bottom (-Y)
-         -0.5f,-0.5f,-0.5f,  0,-1,0,  0,0,
-          0.5f,-0.5f,-0.5f,  0,-1,0,  1,0,
-          0.5f,-0.5f, 0.5f,  0,-1,0,  1,1,
+        -0.5f,-0.5f,-0.5f,  0,-1,0,  0,0,
+         0.5f,-0.5f,-0.5f,  0,-1,0,  1,0,
+         0.5f,-0.5f, 0.5f,  0,-1,0,  1,1,
 
-          0.5f,-0.5f, 0.5f,  0,-1,0,  1,1,
-         -0.5f,-0.5f, 0.5f,  0,-1,0,  0,1,
-         -0.5f,-0.5f,-0.5f,  0,-1,0,  0,0,
+         0.5f,-0.5f, 0.5f,  0,-1,0,  1,1,
+        -0.5f,-0.5f, 0.5f,  0,-1,0,  0,1,
+        -0.5f,-0.5f,-0.5f,  0,-1,0,  0,0,
 
-         // Top (+Y)
-         -0.5f, 0.5f,-0.5f,  0,1,0,   0,0,
-         -0.5f, 0.5f, 0.5f,  0,1,0,   0,1,
-          0.5f, 0.5f, 0.5f,  0,1,0,   1,1,
+        // Top (+Y)
+        -0.5f, 0.5f,-0.5f,  0,1,0,   0,0,
+        -0.5f, 0.5f, 0.5f,  0,1,0,   0,1,
+         0.5f, 0.5f, 0.5f,  0,1,0,   1,1,
 
-          0.5f, 0.5f, 0.5f,  0,1,0,   1,1,
-          0.5f, 0.5f,-0.5f,  0,1,0,   1,0,
-         -0.5f, 0.5f,-0.5f,  0,1,0,   0,0
-    };
-
-
-    inline const std::vector<float> cubeTex  {
-        // Back face
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-        // Front face
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
-        // Left face
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
-        // Right face
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
-         // Bottom face
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-          0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-          0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
-         -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
-         -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
-         // Top face
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-          0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
-          0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
-         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
-         -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left  
+         0.5f, 0.5f, 0.5f,  0,1,0,   1,1,
+         0.5f, 0.5f,-0.5f,  0,1,0,   1,0,
+        -0.5f, 0.5f,-0.5f,  0,1,0,   0,0
     };
 
     inline const std::vector<float> plane{

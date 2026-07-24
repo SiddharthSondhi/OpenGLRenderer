@@ -12,7 +12,7 @@ in vec2 texCoords;
 #define MODE_EMBOSS 5
 #define MODE_TEST 6
 
-uniform sampler2D texture_diffuse1; //screen texture
+uniform sampler2D screenTexture; //screen texture
 uniform int postProcessingMode = MODE_REGULAR;
 uniform float offset  = 1.0f / 300.0f;
 
@@ -20,18 +20,18 @@ uniform float offset  = 1.0f / 300.0f;
 void main(){
     // NOT USING conv matrix
     if (postProcessingMode == MODE_REGULAR){ 
-        fragColor = texture(texture_diffuse1, texCoords);
+        fragColor = texture(screenTexture, texCoords);
     }
     else if (postProcessingMode == MODE_INVERSE){
-        fragColor =  vec4(vec3(1.0 - texture(texture_diffuse1, texCoords)), 1.0);
+        fragColor =  vec4(vec3(1.0 - texture(screenTexture, texCoords)), 1.0);
     }
     else if (postProcessingMode == MODE_GREY_SCALE){
-        fragColor = texture(texture_diffuse1, texCoords);
+        fragColor = texture(screenTexture, texCoords);
         float average = (fragColor.r + fragColor.g + fragColor.b) / 3.0f;
         fragColor = vec4(average, average, average, 1.0f);
     }
     else if (postProcessingMode == MODE_GREY_SCALE_WEIGHTED){
-        fragColor = texture(texture_diffuse1, texCoords);
+        fragColor = texture(screenTexture, texCoords);
         float average = 0.2126f * fragColor.r + 0.7152f * fragColor.g + 0.0722f * fragColor.b;
         fragColor = vec4(average, average, average, 1.0f);
     }
@@ -87,14 +87,18 @@ void main(){
         vec3 sampleTex[9];
     
         for(int i = 0; i < 9; i++){
-            sampleTex[i] = vec3(texture(texture_diffuse1, texCoords + offsets[i]));
+            sampleTex[i] = vec3(texture(screenTexture, texCoords + offsets[i]));
         }
 
         vec3 col = vec3(0.0);
         for(int i = 0; i < 9; i++)
             col += sampleTex[i] * kernel[i];
-    
+        
         fragColor = vec4(col, 1.0);
     }
+
+    // apply gamma correction
+    float gamma = 2.2;
+    fragColor.rgb = pow(fragColor.rgb, vec3(1.0/gamma));
 }
     

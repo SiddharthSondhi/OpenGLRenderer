@@ -46,8 +46,10 @@ Scene buildPlanetScene(Resources& r) {
     InstancedSceneObject asteroids{ &r.asteroidModel, modelMats };
     
     Scene scene;
-    scene.addObject("planet", planet, &r.objectShader);
-    scene.addInstancedObject("asteroids", asteroids, &r.instanceObjectShader);
+    scene.addObject("planet", planet);
+    scene.addInstancedObject("asteroids", asteroids);
+
+    scene.dirLight = { Colors::white };
 
     return scene;
 }
@@ -55,9 +57,10 @@ Scene buildPlanetScene(Resources& r) {
 Scene buildCityScene(Resources& r) {
     SceneObject city{ &r.citySceneModel };
     city.rotation = { -90.0f, 0.0f, 0.0f };
+    city.setMaterialOverride(r.depthMat);
 
     Scene scene;
-    scene.addObject("city", city, &r.depthShader);
+    scene.addObject("city", city);
 
     return scene;
 }
@@ -67,7 +70,7 @@ Scene buildCountryScene(Resources& r) {
     countrySceneObj.rotation = { 0.0f, 90.0f, 0.0f };
 
     Scene scene;
-    scene.addObject("countryScene", countrySceneObj, &r.objectShader);
+    scene.addObject("countryScene", countrySceneObj);
 
     return scene;
 }
@@ -89,82 +92,66 @@ void updateMainScene(Scene& scene, float deltaTime) {
 
     glm::vec3 center{ scene.getObject("backpack")->position + glm::vec3{0.0f, 1.0f, 0.0f}};
 
-    scene.getPointLight("light1")->lightObj.position = glm::vec3(tilt1 * glm::vec4(p1, 1.0f)) + center;
-    scene.getPointLight("light2")->lightObj.position = glm::vec3(tilt2 * glm::vec4(p2, 1.0f)) + center;
-    scene.getPointLight("light3")->lightObj.position = glm::vec3(tilt3 * glm::vec4(p3, 1.0f)) + center;
+    scene.getPointLight("light1")->obj.position = glm::vec3(tilt1 * glm::vec4(p1, 1.0f)) + center;
+    scene.getPointLight("light2")->obj.position = glm::vec3(tilt2 * glm::vec4(p2, 1.0f)) + center;
+    scene.getPointLight("light3")->obj.position = glm::vec3(tilt3 * glm::vec4(p3, 1.0f)) + center;
 }
 
 
 Scene buildMainScene(Resources& r) {
     Scene scene;
 
+    scene.dirLight = { Colors::white };
+
     glm::vec3 backpackPos{ 0.0f, 0.0f, 0.0f };
     SceneObject backpack{ &r.backpackModel, backpackPos };
     backpack.scale = glm::vec3{ .8f };
-    scene.addObject("backpack", backpack, &r.objectShader);
-    //scene.addObject("backpack2", backpack, &r.normalVisShader);
+    scene.addObject("backpack", backpack);
+    
+    SceneObject backpackNormals{ backpack };
+    backpackNormals.setMaterialOverride(r.normalsVisMaterial);
+    //scene.addObject("backpackNormals", backpackNormals);
 
-    SceneObject light1{ &r.lightMesh };
+    SceneObject light1{ &r.lightModel };
     light1.scale = glm::vec3{ 0.2f };
-    SceneObject light2{ &r.lightMesh };
+    light1.setMaterialOverride(r.redMat);
+    SceneObject light2{ &r.lightModel };
     light2.scale = glm::vec3{ 0.2f };
-    SceneObject light3{ &r.lightMesh };
+    light2.setMaterialOverride(r.greenMat);
+    SceneObject light3{ &r.lightModel };
     light3.scale = glm::vec3{ 0.2f };
+    light3.setMaterialOverride(r.blueMat);
 
-    scene.addPointLight("light1", { light1, Colors::blue }, &r.lightShader);
-    scene.addPointLight("light2", { light2, Colors::red }, &r.lightShader);
-    scene.addPointLight("light3", { light3, Colors::green }, &r.lightShader);
+    scene.addPointLight("light1", { light1, Colors::red } );
+    scene.addPointLight("light2", { light2, Colors::green });
+    scene.addPointLight("light3", { light3, Colors::blue });
 
     glm::vec3 center{ -20.0f, 0.0f, 0.0f };
-    SceneObject marbleCube1{ &r.marbleCubeMesh, center + glm::vec3{-1.0f, 0.0f, -1.0f } };
-    SceneObject marbleCube2{ &r.marbleCubeMesh, center + glm::vec3{ 2.0f, 0.0f, 0.0f } };
-    scene.addObject("marbleCube1", marbleCube1, &r.reflectiveShader);
-    scene.addObject("marbleCube2", marbleCube2, &r.reflectiveShader);
-    scene.addObject("marbleCube3", marbleCube2, &r.normalVisShader);
+    SceneObject cube1{ &r.cubeModel, center + glm::vec3{-1.0f, 0.0f, -1.0f } };
+    SceneObject cube2{ &r.cubeModel, center + glm::vec3{ 2.0f, 0.0f,  0.0f } };
+    scene.addObject("c1", cube1);
+    scene.addObject("c2", cube2);
 
-    SceneObject planeMetal{ &r.planeMesh , center + glm::vec3 {0.0f, 0.0f, 0.0f} };
-    planeMetal.scale = glm::vec3{ 1.5f, 1.0f, 1.5f };
-    //scene.addObject("plane", planeMetal, &r.reflectiveShader);
-
-    std::vector<glm::vec3> vegetationPos{
-        center + glm::vec3(-2.5f, 0.0f, 2.48f),
-        center + glm::vec3(1.5f, 0.0f, 3.51f),
-        center + glm::vec3(0.0f, 0.0f, 2.03f),
-        center + glm::vec3(-0.3f, 0.0f, 1.3f),
-        center + glm::vec3(0.5f, 0.0f, 0.6f)
-    };
-
-    std::vector<SceneObject> vegetation{};
-    for (auto pos : vegetationPos) {
-        vegetation.push_back(SceneObject{ &r.grassMesh, pos });
-    }
-
-    for (int i{ 0 }; i < vegetation.size(); i++) {
-        scene.addObject("v" + std::to_string(i), vegetation[i], &r.simpleShader);
-    }
+    SceneObject plane{ &r.planeModel , center  };
+    plane.scale = glm::vec3{ 1.5f, 1.0f, 1.5f };
+    scene.addObject("plane", plane);
 
     scene.setUpdateFunc(updateMainScene);
     return scene;
     
-    //std::vector <glm::vec3> windowsPos{
-    //    glm::vec3(-2.5f, 0.0f, -29.48f),
-    //    glm::vec3(-.5f, 0.0f, -28.51f),
-    //    glm::vec3(1.6f, 0.0f, -25.51f),
-    //};
-
-    //std::vector<SceneObject> windows{};
-    //for (auto pos : windowsPos) {
-    //    windows.push_back(SceneObject{ &windowMesh, pos });
-    //}
 }
 
 Scene buildRefScene(Resources& r) {
     Scene scene;
 
     glm::vec3 scale = glm::vec3{ 8.0f };
-    scene.addObject("bunny", { &r.bunnyModel, glm::vec3{-1.0, 0.0, 0.0}, scale }, &r.reflectiveShader);
-    scene.addObject("bunny", { &r.bunnyModel, glm::vec3{ 1.0, 0.0, 0.0}, scale }, &r.refractiveShader);
+    SceneObject bunny1{ &r.bunnyModel, glm::vec3{-1.0, 0.0, 0.0}, scale };
+    bunny1.setMaterialOverride(r.reflectiveMat);
+    scene.addObject("bunny1", bunny1);
 
+    SceneObject bunny2{ &r.bunnyModel, glm::vec3{1.0, 0.0, 0.0}, scale };
+    bunny2.setMaterialOverride(r.refractiveMat);
+    scene.addObject("bunny2", bunny2);
 
     return scene;
 }
@@ -173,11 +160,38 @@ Scene buildLightScene(Resources& r) {
     Scene scene;
 
     //scene.dirLight = { Colors::white };
-    SceneObject light{ &r.lightMesh, {0, 1, 0}, glm::vec3{0.2f} };
-    scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.lightShader);
+    SceneObject light{ &r.lightModel, {0, 1, 0}, glm::vec3{0.2f} };
+    scene.addPointLight("light1", PointLight{ light, Colors::white });
 
-    SceneObject plane{ &r.planeMesh };
-    scene.addObject("plane", plane, &r.objectShader);
+    SceneObject plane{ &r.planeModel };
+    scene.addObject("plane", plane);
+
+    return scene;
+}
+
+Scene buildShadowScene(Resources& r) {
+    Scene scene;
+
+    scene.dirLight = { Colors::white };
+
+    //SceneObject light{ &r.lightMesh, {-4, 7, 1}, glm::vec3{0.2f} };
+    ////scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.lightShader);
+
+    SceneObject plane{ &r.planeModel };
+    plane.scale = glm::vec3{ 10.0f, 1.0f, 10.0f };
+    scene.addObject("plane", plane);
+
+    SceneObject cube1{ &r.cubeModel, {0.0f, 2.0f, 1.0f}, glm::vec3{2.0f} };
+    SceneObject cube2{ &r.cubeModel, {2.5f, 0.5f, 0.0f}, glm::vec3{1.0f} };
+    SceneObject cube3{ &r.cubeModel, {-2.5f, 0.5f, 0.0f}, glm::vec3{0.5f} , {132, 56, -52} };
+
+    cube1.setMaterialOverride(r.woodMat);
+    cube2.setMaterialOverride(r.woodMat);
+    cube3.setMaterialOverride(r.woodMat);
+
+    scene.addObject("cube1", cube1);
+    scene.addObject("cube2", cube2);
+    scene.addObject("cube3", cube3);
 
     return scene;
 }

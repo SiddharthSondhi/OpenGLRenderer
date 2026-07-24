@@ -18,14 +18,6 @@ InstancedSceneObject::InstancedSceneObject(Model* model, const std::vector<glm::
 	}
 }
 
-InstancedSceneObject::InstancedSceneObject(Mesh* mesh, const std::vector<glm::mat4>& modelMatrices) 
-	: mesh{ mesh },
-	count{ static_cast<int>(modelMatrices.size()) }
-{
-	setUpVBO(modelMatrices);
-	setUpInstanceAttrib(*mesh);
-}
-
 void InstancedSceneObject::setUpVBO(const std::vector<glm::mat4>& modelMatrices) {
 	glGenBuffers(1, &instanceVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
@@ -49,12 +41,4 @@ void InstancedSceneObject::setUpInstanceAttrib(const Mesh& m) {
 }
 
 
-void InstancedSceneObject::draw(const Shader& shader) const{
-	if (model)
-		model->drawInstanced(shader, count);
-	else if (mesh)
-		mesh->drawInstanced(shader, count);
-	else {
-		std::cout << "INSTANCED_SCENE_OBJECT::NO VALID MESH OR MODEL" << "\n";
-	}
-}
+

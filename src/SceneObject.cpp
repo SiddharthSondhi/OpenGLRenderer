@@ -61,7 +61,7 @@ void SceneObject::resetMaterialOverride() {
 	materialOverride.reset();
 }
 
-const Material* SceneObject::getMaterialOverride() const {
+Material* SceneObject::getMaterialOverride() const {
 	return materialOverride.get();
 }
 

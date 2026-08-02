@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-void Scene::addObject(std::string_view name, SceneObject obj) {
+void Scene::addObject(std::string_view name, const SceneObject& obj) {
 	// add to unordered map for O(1) lookup
 	objectLookupMap[std::string{ name }] = objects.size();
 
@@ -12,7 +12,7 @@ void Scene::addObject(std::string_view name, SceneObject obj) {
 	objects.push_back(obj);
 }
 
-void Scene::addInstancedObject(std::string_view name, InstancedSceneObject obj) {
+void Scene::addInstancedObject(std::string_view name, const InstancedSceneObject& obj) {
 	// add to unordered map for O(1) lookup
 	instancedObjectLookupMap[std::string{ name }] = instancedObjects.size();
 
@@ -20,7 +20,7 @@ void Scene::addInstancedObject(std::string_view name, InstancedSceneObject obj) 
 	instancedObjects.push_back(obj);
 }
 
-void Scene::addPointLight(std::string_view name, PointLight light) {
+void Scene::addPointLight(std::string_view name, const PointLight& light) {
 	if (pointLights.size() >= GPUData::MAX_NUMBER_POINT_LIGHTS) {
 		std::cout << "EXCEEDED MAX NUM POINT LIGHTS IN SCENE\n";
 		return;

@@ -30,6 +30,8 @@ void PhongMaterial::bind() const{
 	}
 
 	glActiveTexture(GL_TEXTURE0);
+
+	shader->setVec2("material.textureScale", textureScale);
 }
 
 std::unique_ptr<Material> PhongMaterial::clone() const {

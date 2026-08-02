@@ -29,7 +29,7 @@ public:
 	glm::mat4 getModelMatrix() const;
 	const Model* getModel() const;
 
-	const Material* getMaterialOverride() const;
+	Material* getMaterialOverride() const;
 	void setMaterialOverride(const Material& material);
 	void resetMaterialOverride();
 

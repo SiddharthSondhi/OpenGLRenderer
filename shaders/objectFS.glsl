@@ -6,12 +6,15 @@ in VS_OUT{
     vec3 normal;
     vec3 fragPos;
     vec2 texCoords;
+	vec4 fragPosDirLightSpace;
 } fs_in;
 
 
 struct Material{
 	sampler2D texture_diffuse1;
 	sampler2D texture_specular1;
+
+	vec2 textureScale;
 
 	float shininess;
 };
@@ -55,19 +58,19 @@ layout(std140, binding = 1) uniform Lights{
 };
 
 uniform Material material;
-
+uniform sampler2D shadowMap;
 
 //prototypes
 vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec); 
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec);  
 vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec);  
-
+float calcDirLightShadow(vec3 normal, vec3 lightDirection);
 
 void main(){
     //------------------------- doing all calculations in VIEW SPACE -----------------------
 	// sample textures
-	vec4 texDiff = texture(material.texture_diffuse1, fs_in.texCoords);
-	vec4 texSpec = texture(material.texture_specular1, fs_in.texCoords);
+	vec4 texDiff = texture(material.texture_diffuse1, material.textureScale * fs_in.texCoords);
+	vec4 texSpec = texture(material.texture_specular1, material.textureScale * fs_in.texCoords);
 	
 	//discard fragment if alpha below threshold
 	//if(texDiff.a < 0.05)
@@ -108,7 +111,8 @@ vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 
     vec3 diffuse  = vec3(light.diffuse)  * diff * vec3(texDiff);
     vec3 specular = vec3(light.specular) * spec * vec3(texSpec);
 
-	return ambient + diffuse + specular;
+	float shadow = calcDirLightShadow(normal, lightDir);
+	return ambient + ((1.0 - shadow) * (diffuse + specular));
 }
 
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
@@ -164,4 +168,43 @@ vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec
     vec3 specular = vec3(light.specular) * spec * vec3(texSpec);
 
 	return attentuation * intensity * (diffuse + specular);
+}
+
+float calcDirLightShadow(vec3 normal, vec3 lightDirection){
+	//since frag pos in Light Space not passed through gl_Position, have to do perspective divide to transform it into NDC. 
+	//However, since I am using orothgraphic projection, the w component is always 1, so it does not do anything.
+	//But keeping it in case I use perspective projection in the future.
+	vec3 lightSpaceCoords = fs_in.fragPosDirLightSpace.xyz / fs_in.fragPosDirLightSpace.w;
+
+	// since shadow map is in range [0, 1], transform lightSpaceCoords from NDC [-1, 1] to normalized texture coordinates [0, 1] 
+	// (so it can be used to sample the texture) 
+	lightSpaceCoords = lightSpaceCoords * 0.5 + 0.5;
+	float currentDepth = lightSpaceCoords.z;	
+
+	// if the coords are further than the far plane of the light's frustum, the z value will always be greater than the depth value,
+	// so just set the shadow to 0 so it is not always in shadow
+	if(lightSpaceCoords.z > 1.0)
+         return 0.0;
+
+	// use bias to prevent shadow acne
+	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);  
+	float shadow = 0.0;
+
+	// textureSize returns size of each texel in normalized texture coordinates at mipmap 0;
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+
+	// PCF : sample surrounding texels around the current fragment in light space and average it
+	int sampleCount = 0;
+	int samples = 1;
+	for (int x = -samples;  x <= samples; x++){
+		for(int y = -samples; y <= samples; y++){
+			// .r because shadowMap has a GL_DEPTH_COMPONENT format which stores depth values as (depth, 0, 0, 1.0) -> (r, g, b, a)
+			float closestDepthPCF = texture(shadowMap, lightSpaceCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - bias > closestDepthPCF ? 1.0 : 0.0;
+			sampleCount++;
+		}
+	}
+	shadow /= sampleCount;
+
+	return shadow;
 }

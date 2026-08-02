@@ -1,5 +1,7 @@
 #include "GUI.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -34,6 +36,11 @@ namespace GUI {
 
 		ImGui::Combo("SkyBox Texture", &gui.skyboxIndex, gui.skyboxOptions.data(), static_cast<int>(gui.skyboxOptions.size()));
 		ImGui::Combo("Scene", &gui.currentSceneIndex, gui.scenes.data(), static_cast<int>(gui.scenes.size()));
+
+		ImGui::Checkbox("Show Shadow Map", &gui.showShadowMap);
+
+		if (gui.dirLightDirection)
+			ImGui::DragFloat3( "Directional Light Direction", glm::value_ptr(*gui.dirLightDirection), 0.01f, -10.0f, 10.0f);
 
 		ImGui::End();
 	}

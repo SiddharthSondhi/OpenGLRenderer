@@ -201,6 +201,10 @@
     <ClInclude Include="src\VertexData.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\depthDebugFS.glsl" />
+    <None Include="shaders\depthDebugVS.glsl" />
+    <None Include="shaders\shadowMapFS.glsl" />
+    <None Include="shaders\shadowMapVS.glsl" />
     <None Include="shaders\solidColorFS.glsl" />
     <None Include="shaders\solidColorVS.glsl" />
     <None Include="shaders\depthFS.glsl" />
@@ -238,6 +242,7 @@
     <Image Include="resources\textures\marble.jpg" />
     <Image Include="resources\textures\metal.png" />
     <Image Include="resources\textures\wall.jpg" />
+    <Image Include="resources\textures\wood.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

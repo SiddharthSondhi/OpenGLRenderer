@@ -15,9 +15,9 @@ extern Camera camera;
 
 class Scene {
 public:
-	void addObject(std::string_view name, SceneObject obj);
-	void addInstancedObject(std::string_view name, InstancedSceneObject obj);
-	void addPointLight(std::string_view name, PointLight light);
+	void addObject(std::string_view name, const SceneObject& obj);
+	void addInstancedObject(std::string_view name, const InstancedSceneObject& obj);
+	void addPointLight(std::string_view name, const PointLight& light);
 
 	SceneObject* getObject(const std::string& name);
 	InstancedSceneObject* getInstancedObject(const std::string& name);

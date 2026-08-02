@@ -85,9 +85,7 @@ int main() {
     
     //Renderer
     Renderer renderer;
-    renderer.setUpPostProcessing(windowWidth, windowHeight);
-    renderer.createLightDataUBO();
-    renderer.createMatricesUBO();
+    renderer.init(windowWidth, windowHeight);
 
     // scene objects
     Resources resources;
@@ -130,16 +128,16 @@ int main() {
         processInput(window);
 
         //update scene
-        renderer.updateAndUploadMatrices(windowWidth, windowHeight);
         Scene* currentScene{ scenes[gui.currentSceneIndex] };
+        gui.dirLightDirection = &currentScene->dirLight.direction;
+        renderer.updateMatrices(windowWidth, windowHeight);
         currentScene->update(deltaTime);
         
         //update light data
         renderer.updateLightData(*currentScene, enableFlashLight);
-        renderer.uploadLightData();
 
         //render scene
-        renderer.render(*currentScene, resources);
+        renderer.render(windowWidth, windowHeight, *currentScene, resources);
 
         // gui
         GUI::define(gui);

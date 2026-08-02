@@ -57,9 +57,10 @@ Scene buildPlanetScene(Resources& r) {
 Scene buildCityScene(Resources& r) {
     SceneObject city{ &r.citySceneModel };
     city.rotation = { -90.0f, 0.0f, 0.0f };
-    city.setMaterialOverride(r.depthMat);
+    //city.setMaterialOverride(r.depthMat);
 
     Scene scene;
+    scene.dirLight = { Colors::white };
     scene.addObject("city", city);
 
     return scene;
@@ -179,11 +180,13 @@ Scene buildShadowScene(Resources& r) {
 
     SceneObject plane{ &r.planeModel };
     plane.scale = glm::vec3{ 10.0f, 1.0f, 10.0f };
+    plane.setMaterialOverride(r.woodMat);
+    static_cast<PhongMaterial*>(plane.getMaterialOverride())->textureScale = glm::vec2{ 10.0f };
     scene.addObject("plane", plane);
 
-    SceneObject cube1{ &r.cubeModel, {0.0f, 2.0f, 1.0f}, glm::vec3{2.0f} };
-    SceneObject cube2{ &r.cubeModel, {2.5f, 0.5f, 0.0f}, glm::vec3{1.0f} };
-    SceneObject cube3{ &r.cubeModel, {-2.5f, 0.5f, 0.0f}, glm::vec3{0.5f} , {132, 56, -52} };
+    SceneObject cube1{ &r.cubeModel, {0.0f, 1.5f, 0.0f}, glm::vec3{1.5f} };
+    SceneObject cube2{ &r.cubeModel, {2.0f, 0.05f, 1.0f}, glm::vec3{1.0f} };
+    SceneObject cube3{ &r.cubeModel, {-1.0f, 0.0f, 2.0}, glm::vec3{0.25f} , {132, 56, -52} };
 
     cube1.setMaterialOverride(r.woodMat);
     cube2.setMaterialOverride(r.woodMat);

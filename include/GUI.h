@@ -53,6 +53,11 @@ namespace GUI {
 			"Shadows"
 		};
 
+		//shadow map
+		bool showShadowMap{ false };
+
+		//directional light 
+		glm::vec3* dirLightDirection{ nullptr };
 	};
 
 	void init(GLFWwindow* window);

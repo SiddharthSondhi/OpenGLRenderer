@@ -8,6 +8,7 @@ out VS_OUT{
     vec3 normal;
     vec3 fragPos;
     vec2 texCoords;
+	vec4 fragPosDirLightSpace;
 } vs_out;
 
 

@@ -13,7 +13,7 @@
 
 Model::Model(std::string path, bool flipUVs, const Shader& shader) {
 	Assimp::Importer import;
-    unsigned int flags{ aiProcess_Triangulate | aiProcess_GenSmoothNormals };
+    unsigned int flags{ aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace };
     if (flipUVs) flags |= aiProcess_FlipUVs;
 
 
@@ -72,7 +72,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
-    std::vector<unsigned int> attribSizes{ 3, 3, 2 };
+    std::vector<unsigned int> attribSizes{ 3, 3, 2};
 
     //process vertices
     for (unsigned int i{ 0 }; i < mesh->mNumVertices; i++) {
@@ -90,10 +90,21 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         if (mesh->mTextureCoords[0]) {
             vertices.push_back(mesh->mTextureCoords[0][i].x);
             vertices.push_back(mesh->mTextureCoords[0][i].y);
+            
+            ////tangent
+            //vertices.push_back(mesh->mTangents[i].x);
+            //vertices.push_back(mesh->mTangents[i].y);
+            //vertices.push_back(mesh->mTangents[i].z);
+
+            ////bitangent
+            //vertices.push_back(mesh->mBitangents[i].x);
+            //vertices.push_back(mesh->mBitangents[i].y);
+            //vertices.push_back(mesh->mBitangents[i].z);
         }
         else {
-            vertices.push_back(0.0f);
-            vertices.push_back(0.0f);
+            for (int i{ 0 }; i < 2; i++) {
+                vertices.push_back(0.0f);
+            }
         }
     }
 

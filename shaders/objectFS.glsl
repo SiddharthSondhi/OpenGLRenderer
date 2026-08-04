@@ -13,9 +13,10 @@ in VS_OUT{
 struct Material{
 	sampler2D texture_diffuse1;
 	sampler2D texture_specular1;
+	sampler2D texture_normal1;
 
 	vec2 textureScale;
-
+	bool hasNormalMap;
 	float shininess;
 };
 
@@ -76,7 +77,16 @@ void main(){
 	//if(texDiff.a < 0.05)
        // discard;
 
-	vec3 norm = normalize(fs_in.normal);
+	vec3 norm;
+	if (material.hasNormalMap){
+		// sample normal from normal map, will be in range [0, 1]
+		norm = texture(material.texture_normal1, fs_in.texCoords).rgb;
+		// transform normal vector to range [-1,1] and normalize
+		norm = normalize(norm * 2.0 - 1.0);
+	}
+	else{
+		norm = normalize(fs_in.normal);
+	}
 	vec3 viewDir = normalize(-fs_in.fragPos);
 	vec3 result = vec3(0.0);
 

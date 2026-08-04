@@ -172,7 +172,6 @@ Scene buildLightScene(Resources& r) {
 
 Scene buildShadowScene(Resources& r) {
     Scene scene;
-
     scene.dirLight = { Colors::white };
 
     //SceneObject light{ &r.lightMesh, {-4, 7, 1}, glm::vec3{0.2f} };
@@ -195,6 +194,27 @@ Scene buildShadowScene(Resources& r) {
     scene.addObject("cube1", cube1);
     scene.addObject("cube2", cube2);
     scene.addObject("cube3", cube3);
+
+    return scene;
+}
+
+Scene buildNormalMapScene(Resources& r) {
+    Scene scene;
+    scene.dirLight = { Colors::white };
+
+    SceneObject plane1{ &r.planeModel, r.brickWallMat };
+    plane1.position = { -6, 0, 0 };
+    plane1.rotation = { 90, 0, 0 };
+
+    SceneObject planeNorms{ plane1 };
+    planeNorms.setMaterialOverride(r.normalsVisMaterial);
+
+    SceneObject plane2{ &r.planeModel, r.brickWallMat };
+    plane2.position = { 6, 0, 0 };
+
+    scene.addObject("p1", plane1);
+    scene.addObject("p2", plane2);
+    scene.addObject("norms", planeNorms);
 
     return scene;
 }

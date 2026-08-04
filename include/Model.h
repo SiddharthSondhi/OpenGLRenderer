@@ -11,9 +11,15 @@
 #include <unordered_map>
 #include <memory>
 
+struct ModelLoadOptions {
+	bool flipUVs{ false };
+	bool calcTangentSpace{ false };
+	bool genSmoothNormals{ true };
+};
+
 class Model {
 public:
-	Model(std::string path, bool flipUVs, const Shader& shader);
+	Model(std::string path, const Shader& shader, const ModelLoadOptions& options = {});
 	Model(const Mesh& mesh, const Material& material);
 
 	const std::vector<Mesh>& getMeshes() const;
@@ -25,8 +31,8 @@ private:
 	std::vector<std::unique_ptr<Material>> materials;
 	std::unordered_map<std::string, Texture> loadedTextures;
 
-	void processNode(aiNode* node, const aiScene* scene);
-	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+	void processNode(aiNode* node, const aiScene* scene, const ModelLoadOptions& options);
+	Mesh processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptions& options);
 	void processMaterials(const aiScene* scene, const Shader& shader);
 	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene);
 };

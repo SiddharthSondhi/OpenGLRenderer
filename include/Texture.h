@@ -6,7 +6,8 @@ class Texture {
 public:
 	enum Type {
 		diffuse,
-		specular
+		specular,
+		normal
 	};
 
 	unsigned int id{ 0 };

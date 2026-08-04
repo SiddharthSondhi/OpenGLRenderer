@@ -10,3 +10,4 @@ Scene buildMainScene(Resources& r);
 Scene buildRefScene(Resources& r);
 Scene buildLightScene(Resources& r);
 Scene buildShadowScene(Resources& r);
+Scene buildNormalMapScene(Resources& r);

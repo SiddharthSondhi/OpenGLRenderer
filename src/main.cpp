@@ -97,14 +97,9 @@ int main() {
     Scene refScene{ buildRefScene(resources) };
     Scene lightScene{ buildLightScene(resources) };
     Scene shadowScene{ buildShadowScene(resources) };
+    Scene normalMapScene{ buildNormalMapScene(resources) };
 
-    std::array<Scene*, 7> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene };
-
-    resources.objectShader.use();
-    resources.objectShader.setFloat("material.shininess", 400.0f);
-
-    resources.instanceObjectShader.use();
-    resources.instanceObjectShader.setFloat("material.shininess", 256.0f);
+    std::array<Scene*,  8> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene };
 
     // settings
     glEnable(GL_DEPTH_TEST);

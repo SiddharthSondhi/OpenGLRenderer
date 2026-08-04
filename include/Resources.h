@@ -10,7 +10,6 @@
 #include "PhongMaterial.h"
 #include "BasicMaterial.h"
 
-
 #include <array>
 
 struct Resources {
@@ -51,6 +50,8 @@ struct Resources {
     unsigned int grassTex{ Utils::loadTextureFromFile("./resources/textures/grass.png") };
     unsigned int windowTex{ Utils::loadTextureFromFile("./resources/textures/blending_transparent_window.png") };
     unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.jpg", true) };
+    unsigned int brickWallTex{ Utils::loadTextureFromFile("./resources/textures/brickwall.jpg", true) };
+    unsigned int brickWallNormalMap{ Utils::loadTextureFromFile("./resources/textures/brickwall_normal.jpg") };
 
 
     // materials
@@ -60,6 +61,7 @@ struct Resources {
     SolidColorMaterial whiteMat{ lightShader, Colors::white };
     PhongMaterial marbleMat{ objectShader, {{boxMarbleTex, Texture::diffuse}} };
     PhongMaterial woodMat{ objectShader, {{woodTex, Texture::diffuse}} };
+    PhongMaterial brickWallMat{ objectShader, {{brickWallTex, Texture::diffuse}, {brickWallNormalMap, Texture::normal}}, 256.0f };
     BasicMaterial normalsVisMaterial{ normalVisShader };
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };
@@ -72,15 +74,15 @@ struct Resources {
     //Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
 
 	// models
-	Model planetModel{ "./resources/models/planet/planet.obj", false, objectShader };
-	Model asteroidModel{ "./resources/models/rock/rock.obj", true, instanceObjectShader };
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", false, objectShader };
+    Model planetModel{ "./resources/models/planet/planet.obj", objectShader  };
+    Model asteroidModel{ "./resources/models/rock/rock.obj",  instanceObjectShader, { true } };
+    Model backpackModel{ "./resources/models/backpack/backpack.obj", objectShader };
     Model lightModel{ cubeMesh, whiteMat };
     Model cubeModel{ cubeMesh, marbleMat };
     Model planeModel{ planeMesh, woodMat };
-    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", true, objectShader };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", false, objectShader };
-    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", false, objectShader };
+    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", objectShader, { true } };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", objectShader };
+    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", objectShader };
     //Model planet2Model{ "./resources/models/planet2/pbr_dark_planet_4.glb", false };
 
 };

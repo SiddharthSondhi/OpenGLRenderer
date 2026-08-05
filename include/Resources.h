@@ -76,7 +76,7 @@ struct Resources {
 	// models
     Model planetModel{ "./resources/models/planet/planet.obj", objectShader  };
     Model asteroidModel{ "./resources/models/rock/rock.obj",  instanceObjectShader, { true } };
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", objectShader };
+    Model backpackModel{ "./resources/models/backpack/backpack.obj", objectShader , { false, true } };
     Model lightModel{ cubeMesh, whiteMat };
     Model cubeModel{ cubeMesh, marbleMat };
     Model planeModel{ planeMesh, woodMat };

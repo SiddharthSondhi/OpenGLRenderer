@@ -3,10 +3,12 @@
 out vec4 fragColor;
 
 in VS_OUT{
-    vec3 normal;
     vec3 fragPos;
     vec2 texCoords;
 	vec4 fragPosDirLightSpace;
+
+	vec3 normal;
+	mat3 TBN;
 } fs_in;
 
 
@@ -81,8 +83,8 @@ void main(){
 	if (material.hasNormalMap){
 		// sample normal from normal map, will be in range [0, 1]
 		norm = texture(material.texture_normal1, fs_in.texCoords).rgb;
-		// transform normal vector to range [-1,1] and normalize
-		norm = normalize(norm * 2.0 - 1.0);
+		// transform normal vector to range [-1,1] , transform to view space using TBN, and normalize
+		norm = normalize(fs_in.TBN * (norm * 2.0 - 1.0));
 	}
 	else{
 		norm = normalize(fs_in.normal);

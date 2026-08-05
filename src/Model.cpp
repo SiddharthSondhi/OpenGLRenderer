@@ -51,6 +51,9 @@ void Model::processMaterials(const aiScene* scene, const Shader& shader) {
         std::vector<Texture> specularMaps = loadMaterialTextures(assimpMat, aiTextureType_SPECULAR, scene);
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 
+        std::vector<Texture> normalMaps = loadMaterialTextures(assimpMat, aiTextureType_HEIGHT, scene);
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+
         float shininess = 128.0f;
         assimpMat->Get(AI_MATKEY_SHININESS, shininess);
 
@@ -167,6 +170,9 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
             break;
         case aiTextureType_SPECULAR:
             texture.type = Texture::specular;
+            break;
+        case aiTextureType_HEIGHT:
+            texture.type = Texture::normal;
             break;
         }
 

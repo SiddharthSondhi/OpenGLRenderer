@@ -1,8 +1,6 @@
 # OpenGL Renderer
 
-A real-time renderer written in C++ using modern OpenGL. This project began as a way to learn the graphics pipeline beyond the basics and has gradually grown into a reusable rendering framework. Rather than relying on an existing game engine, the focus is on implementing common rendering techniques directly with OpenGL and understanding how they work.
-
-The project is organized around reusable components such as models, meshes, materials, shaders, textures, scenes, and a renderer, making it easy to experiment with new rendering techniques while keeping the codebase manageable.
+A real time renderer written in C++ using OpenGL 4.6.
 
 ---
 
@@ -22,14 +20,13 @@ The project is organized around reusable components such as models, meshes, mate
 ### Materials
 
 - Diffuse, specular, and normal textures
-- Texture scaling
 - Material abstraction for managing shaders and textures
 - Support for imported model materials
 
 ### Model Loading
 
 - Assimp integration
-- Use of Assimp to import model which are converted into custom Model format that can be rendered with the above pipleline
+- Use of Assimp to import models which are converted into my model format that can be rendered with the pipleline
 
 ### Post Processing
 

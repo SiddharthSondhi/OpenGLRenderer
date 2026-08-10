@@ -109,10 +109,13 @@ Some features planned for future versions include:
 - Physically Based Rendering (PBR)
 - Image Based Lighting (IBL)
 - Omnidirectional shadow mapping
-- Deferred rendering
-- HDR rendering
+- Deferred shading
+- HDR
 - Bloom
 - SSAO
+- Particle System
+- Terrain Generation
+- Parallax Mapping
 
 ---
 

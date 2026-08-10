@@ -218,3 +218,42 @@ Scene buildNormalMapScene(Resources& r) {
 
     return scene;
 }
+
+Scene buildHDRScene(Resources& r) {
+    Scene scene;
+
+    //scene.dirLight = { Colors::white };
+
+    SceneObject light1{ &r.lightModel, {-2.0f, 0.0f, 28.0f} };
+    light1.scale = glm::vec3{ 0.2f };
+    light1.setMaterialOverride(r.redMat);
+    SceneObject light2{ &r.lightModel,  {2.0f, 0.0f, 26.0f} };
+    light2.scale = glm::vec3{ 0.2f };
+    light2.setMaterialOverride(r.greenMat);
+    SceneObject light3{ &r.lightModel,  {0.0f, 0.0f, 24.0f} };
+    light3.scale = glm::vec3{ 0.2f };
+    light3.setMaterialOverride(r.blueMat);
+
+    SceneObject light4{ &r.lightModel,  {0.0f, 0.0f, -33.0f} };
+    light4.scale = glm::vec3{ 0.2f };
+
+
+    scene.addPointLight("light1", { light1, Colors::red * 0.1f});
+    scene.addPointLight("light2", { light2, Colors::green * 0.1f });
+    scene.addPointLight("light3", { light3, Colors::blue * 0.1f });
+    PointLight pl4{ light4, Colors::white * 100.0f };
+    pl4.quadratic = .3;
+    pl4.linear = .04;
+    scene.addPointLight("light4", pl4);
+
+
+    SceneObject tunnel { &r.tunnelModel };
+    tunnel.scale = { 4.0f, 4.0f, 40.0f };
+    PhongMaterial tunnelMat{ r.woodMat };
+    tunnelMat.textureScale = glm::vec2{ 3.0f };
+    tunnel.setMaterialOverride(tunnelMat);
+
+    scene.addObject( "tunnel", tunnel );
+
+    return scene;
+}

@@ -13,6 +13,8 @@ void Renderer::render(float windowWidth, float windowHeight, const Scene& scene,
 	postProcShader.use();
 	postProcShader.setFloat("offset", 1.0f / gui.convMatrixOffset);
 	postProcShader.setInt("postProcessingMode", gui.postProcessingMode);
+	postProcShader.setInt("toneMappingMode", gui.currentToneMapping);
+	postProcShader.setFloat("exposure", gui.exposure);
 
 	//shadow pass
 	shadowPass(scene, resources);
@@ -207,8 +209,12 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 		const PointLight& light{ pointLights[i] };
 
 		lightData.pointLights[i].position = view * glm::vec4{ light.obj.position, 1.0f };
-		lightData.pointLights[i].diffuse = glm::vec4{ light.color, 1.0f };
-		lightData.pointLights[i].specular = glm::vec4{ light.color, 1.0f };
+
+		lightData.pointLights[i].attenuation = glm::vec4{ light.constant, light.linear, light.quadratic, 1.0f };
+
+		lightData.pointLights[i].ambient = glm::vec4{ light.ambient, 1.0f };
+		lightData.pointLights[i].diffuse = glm::vec4{ light.diffuse, 1.0f };
+		lightData.pointLights[i].specular = glm::vec4{ light.specular, 1.0f };
 	}
 
 	//spot light
@@ -246,7 +252,7 @@ void Renderer::setUpPostProcessing(float windowWidth, float windowHeight) {
 	// generate texture
 	glGenTextures(1, &postProcTextureColorBuffer);
 	glBindTexture(GL_TEXTURE_2D, postProcTextureColorBuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);

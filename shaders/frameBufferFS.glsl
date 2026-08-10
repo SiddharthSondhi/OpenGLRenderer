@@ -3,18 +3,25 @@ out vec4 fragColor;
   
 in vec2 texCoords;
 
+// post processing modes
+const int MODE_REGULAR = 0;
+const int MODE_INVERSE = 1;
+const int MODE_GREY_SCALE = 2;
+const int MODE_GREY_SCALE_WEIGHTED = 3;
+const int MODE_SHARPEN = 4;
+const int MODE_EMBOSS = 5;
+const int MODE_TEST = 6;
 
-#define MODE_REGULAR 0
-#define MODE_INVERSE 1
-#define MODE_GREY_SCALE 2
-#define MODE_GREY_SCALE_WEIGHTED 3
-#define MODE_SHARPEN 4
-#define MODE_EMBOSS 5
-#define MODE_TEST 6
+// tone mapping modes
+const int TONE_MAPPING_OFF = 0;
+const int TONE_MAPPING_REINHARD = 1;
+const int TONE_MAPPING_EXPOSURE = 2;
 
 uniform sampler2D screenTexture; //screen texture
 uniform int postProcessingMode = MODE_REGULAR;
 uniform float offset  = 1.0f / 300.0f;
+uniform int toneMappingMode = TONE_MAPPING_OFF;
+uniform float exposure = 1.0f;
 
 
 void main(){
@@ -95,6 +102,14 @@ void main(){
             col += sampleTex[i] * kernel[i];
         
         fragColor = vec4(col, 1.0);
+    }
+
+    //apply tone mapping
+    if (toneMappingMode == TONE_MAPPING_REINHARD){
+        fragColor.rgb = fragColor.rgb / (fragColor.rgb + vec3(1.0));
+    }
+    if (toneMappingMode == TONE_MAPPING_EXPOSURE){
+        fragColor.rgb = vec3(1.0) - exp(-fragColor.rgb * exposure);
     }
 
     // apply gamma correction

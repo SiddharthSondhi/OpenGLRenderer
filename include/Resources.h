@@ -70,6 +70,7 @@ struct Resources {
     // meshes
     Mesh cubeMesh{ VertexData::cube, {3, 3, 2} };
     Mesh planeMesh{ VertexData::plane, {3, 3, 2}};
+    Mesh tunnelMesh{ VertexData::insideOutCube, {3, 3, 2} };
     //Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
     //Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
 
@@ -83,6 +84,5 @@ struct Resources {
     Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", objectShader, { true } };
     Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", objectShader };
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", objectShader };
-    //Model planet2Model{ "./resources/models/planet2/pbr_dark_planet_4.glb", false };
-
+    Model tunnelModel{ tunnelMesh, woodMat };
 };

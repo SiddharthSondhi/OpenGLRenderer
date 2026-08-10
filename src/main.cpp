@@ -98,8 +98,9 @@ int main() {
     Scene lightScene{ buildLightScene(resources) };
     Scene shadowScene{ buildShadowScene(resources) };
     Scene normalMapScene{ buildNormalMapScene(resources) };
+    Scene HDRScene{ buildHDRScene(resources) };
 
-    std::array<Scene*,  8> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene };
+    std::array<Scene*,  9> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene };
 
     // settings
     glEnable(GL_DEPTH_TEST);

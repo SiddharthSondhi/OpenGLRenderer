@@ -1,0 +1,16 @@
+## Things to add/fix
+- Instanced objects do normal matrix calculation on CPU and upload as attribute
+- Manually calculate TBN matrix to support normals for things not loaded from Assimp
+- Reduce loading time when starting 
+	- cubemaps: reduce resolution, lazy loading, multithreading? 
+	- figure out a way to save tangent/bitangent so it doesn't have to be calculated everytime
+- Get MSAA working
+- Setup debug output
+- Figure out if using correct versions of libraries for debug vs release mode
+- Point shadows
+- improve directional shadows
+	- dynamically update shadow map based on camera frustum
+	- cascaded shadow maps
+	- better PCF
+- fix city model textures (https://sketchfab.com/3d-models/city-scene-c00b3b8c71594890a2a3c46c20a30b5c?)
+- better way to name/id objects in the scene

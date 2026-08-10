@@ -42,6 +42,13 @@ namespace GUI {
 		if (gui.dirLightDirection)
 			ImGui::DragFloat3( "Directional Light Direction", glm::value_ptr(*gui.dirLightDirection), 0.01f, -10.0f, 10.0f);
 
+		ImGui::Combo("Tone Mapping", &gui.currentToneMapping, gui.toneMappingModes.data(), static_cast<int>(gui.toneMappingModes.size()));
+		if (gui.currentToneMapping == 2)
+		{
+			ImGui::SliderFloat("Exposure", &gui.exposure, 0.0f, 5.0f);
+		}
+
+
 		ImGui::End();
 	}
 

@@ -244,6 +244,9 @@
     <Image Include="resources\textures\wall.jpg" />
     <Image Include="resources\textures\wood.jpg" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="notes.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

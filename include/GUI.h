@@ -43,7 +43,7 @@ namespace GUI {
 
 		// scene
 		int currentSceneIndex{ 0 };
-		std::array<const char*, 8> scenes{
+		std::array<const char*, 9> scenes{
 			"Main",
 			"Planet",
 			"City",
@@ -51,7 +51,8 @@ namespace GUI {
 			"Reflective",
 			"Light",
 			"Shadows",
-			"NormalMap"
+			"NormalMap",
+			"HDR"
 		};
 
 		//shadow map
@@ -59,6 +60,16 @@ namespace GUI {
 
 		//directional light 
 		glm::vec3* dirLightDirection{ nullptr };
+
+		//tone mapping
+		int currentToneMapping{ 0 };
+		std::array<const char*, 3> toneMappingModes{
+			"Off",
+			"Rienhard",
+			"Exposure"
+		};
+
+		float exposure{ 1.0f };
 	};
 
 	void init(GLFWwindow* window);

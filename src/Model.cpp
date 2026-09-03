@@ -12,7 +12,7 @@
 #include <iostream>
 
 Model::Model(std::string path, const ModelLoadOptions& options) {
-    unsigned int flags{ aiProcess_Triangulate};
+    unsigned int flags{ aiProcess_Triangulate };
     if (options.flipUVs) flags |= aiProcess_FlipUVs;
     if (options.genSmoothNormals) flags |= aiProcess_GenSmoothNormals;
     if (options.calcTangentSpace) flags |= aiProcess_CalcTangentSpace;
@@ -43,21 +43,14 @@ void Model::processMaterials(const aiScene* scene) {
     for (unsigned int i{ 0 }; i < scene->mNumMaterials; i++) {
         aiMaterial* assimpMat{ scene->mMaterials[i] };
 
-        std::vector<Texture> textures;
-
-        std::vector<Texture> diffuseMaps = loadMaterialTextures(assimpMat, aiTextureType_DIFFUSE, scene);
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-
-        std::vector<Texture> specularMaps = loadMaterialTextures(assimpMat, aiTextureType_SPECULAR, scene);
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-
-        std::vector<Texture> normalMaps = loadMaterialTextures(assimpMat, aiTextureType_HEIGHT, scene);
-        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+        unsigned int diffuseTex = loadMaterialTextures(assimpMat, aiTextureType_DIFFUSE, scene);
+        unsigned int specularTex = loadMaterialTextures(assimpMat, aiTextureType_SPECULAR, scene);
+        unsigned int normalTex = loadMaterialTextures(assimpMat, aiTextureType_HEIGHT, scene);
 
         float shininess = 256.0f;
         assimpMat->Get(AI_MATKEY_SHININESS, shininess);
 
-        materials.emplace_back(std::make_unique<PhongMaterial>(std::move(textures), shininess));
+        materials.emplace_back(std::make_unique<PhongMaterial>(diffuseTex, specularTex, normalTex, shininess));
     }
 }
 
@@ -78,7 +71,6 @@ void Model::processNode(aiNode* node, const aiScene* scene, const ModelLoadOptio
 Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptions& options) {
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
-    std::vector<Texture> textures;
     std::vector<unsigned int> attribSizes{ 3, 3, 2 };
     if (options.calcTangentSpace) {
         attribSizes.push_back(3);
@@ -141,69 +133,62 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptio
 
 
 
-std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene) {
-    
-    // loop through each textureName for this type in mat and load the textureName, then create Texture objects and return them
-    std::vector<Texture> textures;
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
-        aiString str;
-        mat->GetTexture(type, i, &str);
-        std::string textureName{ str.C_Str() };
+unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene) {
+    if (mat->GetTextureCount(type) == 0) 
+        return 0;
 
-        if (textureName.empty()) {
-            continue;
-        }
-
-        //check to see if textureName has already been loaded
-        if (loadedTextures.contains(textureName)) {
-            textures.push_back(loadedTextures[textureName]);
-            continue;
-        }
-
-        Texture texture;
-        bool gammaCorrected{ false };
-
-        switch (type) {
-        case aiTextureType_DIFFUSE:
-            texture.type = Texture::diffuse;
-            gammaCorrected = true;
-            break;
-        case aiTextureType_SPECULAR:
-            texture.type = Texture::specular;
-            break;
-        case aiTextureType_HEIGHT:
-            texture.type = Texture::normal;
-            break;
-        }
-
-        // if texture is embedded
-        if (textureName[0] == '*'){
-            unsigned int textureIndex{ static_cast<unsigned int>(std::stoi(textureName.substr(1)))};
-
-            if (textureIndex < scene->mNumTextures){
-                aiTexture* embeddedTexture = scene->mTextures[textureIndex];
-
-                texture.id = Utils::loadTextureFromMemory(
-                    reinterpret_cast<unsigned char*>(embeddedTexture->pcData), 
-                    embeddedTexture->mWidth, 
-                    gammaCorrected);
-            }
-            else
-            {
-                std::cout << "Invalid embedded texture index: " << textureName << '\n';
-                continue;
-            }
-        }
-        // otherwise load from file
-        else{
-            texture.id = Utils::loadTextureFromFile(directory + "/" + textureName, gammaCorrected);
-        }
-        
-        textures.push_back(texture);
-        loadedTextures[textureName] = texture;
+    if (mat->GetTextureCount(type) > 1) {
+        std::cout << "Material contains " << mat->GetTextureCount(type) << " textures of type " << type << "; only using the first.\n";
     }
 
-    return textures;
+    aiString str;
+    mat->GetTexture(type, 0, &str);
+    std::string textureName{ str.C_Str() };
+
+    if (textureName.empty()) {
+        return 0;
+    }
+
+    //check to see if textureName has already been loaded
+    if (loadedTextures.contains(textureName)) {
+        return loadedTextures[textureName];
+    }
+
+    bool gammaCorrected{ false };
+
+    switch (type) {
+    case aiTextureType_DIFFUSE:
+        gammaCorrected = true;
+        break;
+    case aiTextureType_SPECULAR:
+        break;
+    case aiTextureType_HEIGHT:
+        break;
+    }
+
+    unsigned int texture;
+
+    // if texture is embedded
+    if (textureName[0] == '*'){
+        unsigned int textureIndex{ static_cast<unsigned int>(std::stoi(textureName.substr(1)))};
+
+        if (textureIndex < scene->mNumTextures){
+            aiTexture* embeddedTexture = scene->mTextures[textureIndex];
+
+            texture = Utils::loadTextureFromMemory( reinterpret_cast<unsigned char*>(embeddedTexture->pcData), embeddedTexture->mWidth, gammaCorrected);
+        }
+        else{
+            std::cout << "Invalid embedded texture index: " << textureName << '\n';
+            return 0;
+        }
+    }
+    // otherwise load from file
+    else{
+        texture = Utils::loadTextureFromFile(directory + "/" + textureName, gammaCorrected);
+    }
+        
+    loadedTextures[textureName] = texture;
+    return texture;
 }
 
 

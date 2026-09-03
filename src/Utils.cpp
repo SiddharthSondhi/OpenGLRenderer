@@ -143,4 +143,10 @@ namespace Utils {
 
         return textureID;
     }
+
+    void setTextureWrapMode(unsigned int textureID, GLenum textureWrapMode) {
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, textureWrapMode);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, textureWrapMode);
+    }
 }

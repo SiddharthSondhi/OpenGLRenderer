@@ -164,7 +164,6 @@
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\SceneObject.cpp" />
     <ClCompile Include="src\SolidColorMaterial.cpp" />
-    <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,7 +186,6 @@
     <ClInclude Include="include\SceneObject.h" />
     <ClInclude Include="include\Shader.h" />
     <ClInclude Include="include\SolidColorMaterial.h" />
-    <ClInclude Include="include\Texture.h" />
     <ClInclude Include="include\Utils.h" />
     <ClInclude Include="include\VertexData.h" />
     <ClInclude Include="src\Camera.h" />

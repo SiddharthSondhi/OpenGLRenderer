@@ -58,9 +58,9 @@ struct Resources {
     SolidColorMaterial blueMat{ Colors::blue };
     SolidColorMaterial greenMat{ Colors::green };
     SolidColorMaterial whiteMat{ Colors::white };
-    PhongMaterial marbleMat{ {{boxMarbleTex, Texture::diffuse}} };
-    PhongMaterial woodMat{ {{woodTex, Texture::diffuse}} };
-    PhongMaterial brickWallMat{ {{brickWallTex, Texture::diffuse}, {brickWallNormalMap, Texture::normal}}, 256.0f };
+    PhongMaterial marbleMat{ boxMarbleTex };
+    PhongMaterial woodMat{ woodTex };
+    PhongMaterial brickWallMat{ brickWallTex, 0, brickWallNormalMap, 256.0f };
     BasicMaterial normalsVisMaterial{ normalVisShader };
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };

@@ -2,7 +2,6 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "Material.h"
-#include "Texture.h"
 
 #include <assimp/scene.h>
 
@@ -29,10 +28,10 @@ private:
 	std::string directory;
 	std::vector<Mesh> meshes;
 	std::vector<std::unique_ptr<Material>> materials;
-	std::unordered_map<std::string, Texture> loadedTextures;
+	std::unordered_map<std::string, unsigned int> loadedTextures;
 
 	void processNode(aiNode* node, const aiScene* scene, const ModelLoadOptions& options);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptions& options);
 	void processMaterials(const aiScene* scene);
-	std::vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene);
+	unsigned int loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene);
 };

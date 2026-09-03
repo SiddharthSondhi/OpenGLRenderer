@@ -13,12 +13,13 @@ in VS_OUT{
 
 
 struct Material{
-	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
-	sampler2D texture_normal1;
+	sampler2D texture_diffuse;
+	sampler2D texture_specular;
+	sampler2D texture_normal;
 
 	vec2 textureScale;
 	bool hasNormalMap;
+	bool hasSpecularMap;
 	float shininess;
 };
 
@@ -72,8 +73,12 @@ float calcDirLightShadow(vec3 normal, vec3 lightDirection);
 void main(){
     //------------------------- doing all calculations in VIEW SPACE -----------------------
 	// sample textures
-	vec4 texDiff = texture(material.texture_diffuse1, material.textureScale * fs_in.texCoords);
-	vec4 texSpec = texture(material.texture_specular1, material.textureScale * fs_in.texCoords);
+	vec4 texDiff = texture(material.texture_diffuse, material.textureScale * fs_in.texCoords);
+	vec4 texSpec;
+	if (material.hasSpecularMap)
+		texSpec = texture(material.texture_specular, material.textureScale * fs_in.texCoords);
+	else
+		texSpec = vec4(0.3, 0.3, 0.3, 1.0);
 	
 	//discard fragment if alpha below threshold
 	//if(texDiff.a < 0.05)
@@ -82,7 +87,7 @@ void main(){
 	vec3 norm;
 	if (material.hasNormalMap){
 		// sample normal from normal map, will be in range [0, 1]
-		norm = texture(material.texture_normal1, fs_in.texCoords).rgb;
+		norm = texture(material.texture_normal, fs_in.texCoords).rgb;
 		// transform normal vector to range [-1,1] , transform to view space using TBN, and normalize
 		norm = normalize(fs_in.TBN * (norm * 2.0 - 1.0));
 	}

@@ -11,12 +11,13 @@ in VS_OUT{
 } fs_in;
 
 struct Material{
-	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
-	sampler2D texture_normal1;
+	sampler2D texture_diffuse;
+	sampler2D texture_specular;
+	sampler2D texture_normal;
 
 	vec2 textureScale;
 	bool hasNormalMap;
+	bool hasSpecularMap;
 	float shininess;
 };
 
@@ -27,13 +28,18 @@ void main(){
 	
 	if (material.hasNormalMap){
 		// sample normal from normal map, will be in range [0, 1]
-		vec3 norm = texture(material.texture_normal1, fs_in.texCoords).rgb;
+		vec3 norm = texture(material.texture_normal, fs_in.texCoords).rgb;
 		// transform normal vector to range [-1,1] , transform to view space using TBN, and normalize
 		gNormal = vec4(normalize(fs_in.TBN * (norm * 2.0 - 1.0)), 1.0);
 	}
 	else{
 		gNormal = vec4(normalize(fs_in.normal), 1.0);
 	}
-	gAlbedoSpec.rgb = texture(material.texture_diffuse1, material.textureScale * fs_in.texCoords).rgb;
-	gAlbedoSpec.a = texture(material.texture_specular1, material.textureScale * fs_in.texCoords).r;
+	gAlbedoSpec.rgb = texture(material.texture_diffuse, material.textureScale * fs_in.texCoords).rgb;
+
+
+	if (material.hasSpecularMap)
+		gAlbedoSpec.a = texture(material.texture_specular, material.textureScale * fs_in.texCoords).r;
+	else
+		gAlbedoSpec.a = 0.3;
 }

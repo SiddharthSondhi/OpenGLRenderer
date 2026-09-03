@@ -53,7 +53,7 @@ private:
 	unsigned int shadowMap;
 	static constexpr unsigned int SHADOW_WIDTH = 4096;
 	static constexpr unsigned int SHADOW_HEIGHT = 4096;
-	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 5;
+	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 3;
 	glm::mat4 dirLightSpaceMat;
 
 

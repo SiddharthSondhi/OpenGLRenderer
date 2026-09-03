@@ -2,51 +2,32 @@
 #include <glad/glad.h>
 #include <iostream>
 
-PhongMaterial::PhongMaterial(std::vector<Texture> textures, float shininess)
-	: textures{ textures } , shininess {shininess}
-{
-	for (const Texture& t : textures) {
-		if (t.type == Texture::normal)
-			hasNormalMap = true;
-	}
-}
+PhongMaterial::PhongMaterial(unsigned int diffuseTex, unsigned int specularTex, unsigned int normalTex, float shininess)
+	: diffuseTex { diffuseTex },
+	specularTex{ specularTex },
+	normalTex{ normalTex },
+	shininess{ shininess } {}
 
 void PhongMaterial::bind(const Shader& shader) const{
-	int diffuseNum{ 1 }, specularNum{ 1 }, normalNum{ 1 };
+	shader.use();
 
-	// unbind previous textures
-	for (int i{ 0 }; i < 5; i++) {
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	// bind textures and set uniforms
+	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_UNIT);
+	glBindTexture(GL_TEXTURE_2D, diffuseTex);
+	shader.setInt("material.texture_diffuse", DIFFUSE_TEXTURE_UNIT);
 
-	// activate texture units binding textures and setting sampler uniforms in the shader to the unit number
-	for (int i{ 0 }; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + i);
+	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_UNIT);
+	glBindTexture(GL_TEXTURE_2D, specularTex);
+	shader.setInt("material.texture_specular", SPECULAR_TEXTURE_UNIT);
 
-		// uniform name format : texture_typeN 
-		std::string uniformName{ "material.texture_" };
-		switch (textures[i].type) {
-
-		case Texture::diffuse:
-			uniformName += "diffuse" + std::to_string(diffuseNum++);
-			break;
-		case Texture::specular:
-			uniformName += "specular" + std::to_string(specularNum++);
-			break;
-		case Texture::normal:
-			uniformName += "normal" + std::to_string(normalNum++);
-			break;
-		}
-
-		shader.setInt(uniformName, i);
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
-	}
-
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0 + NORMAL_TEXTURE_UNIT);
+	glBindTexture(GL_TEXTURE_2D, normalTex);
+	shader.setInt("material.texture_normal", NORMAL_TEXTURE_UNIT);
 
 	shader.setVec2("material.textureScale", textureScale);
-	shader.setBool("material.hasNormalMap", hasNormalMap);
+	shader.setBool("material.hasNormalMap", !(normalTex == 0));
+	shader.setBool("material.hasSpecularMap", !(specularTex == 0));
+
 	shader.setFloat("material.shininess", shininess);
 }
 

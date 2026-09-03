@@ -4,7 +4,9 @@
 
 class BasicMaterial : public Material {
 public:
-	BasicMaterial(const Shader& shader);
+	BasicMaterial(Shader& shader);
 	std::unique_ptr<Material> clone() const override;
-	void bind() const override;
+	void bind(const Shader& shader) const override;
+	Type getType() const override;
+	Shader* shader;
 };

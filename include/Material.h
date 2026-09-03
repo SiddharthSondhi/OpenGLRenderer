@@ -6,13 +6,15 @@
 
 class Material {
 public:
-	Material(const Shader& shader);
+	enum Type {
+		Phong,
+		Basic,
+		SolidColor
+	};
+
 	virtual ~Material() = default;
 
 	virtual std::unique_ptr<Material> clone() const = 0;
-	virtual void bind() const = 0;
-	const Shader* getShader() const;
-
-protected:
-	const Shader* shader{ nullptr };
+	virtual void bind(const Shader& shader) const = 0;
+	virtual Type getType() const = 0;
 };

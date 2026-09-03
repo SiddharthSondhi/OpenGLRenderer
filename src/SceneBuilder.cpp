@@ -175,7 +175,7 @@ Scene buildShadowScene(Resources& r) {
     scene.dirLight = { Colors::white };
 
     //SceneObject light{ &r.lightMesh, {-4, 7, 1}, glm::vec3{0.2f} };
-    ////scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.lightShader);
+    ////scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.solidColorShader);
 
     SceneObject plane{ &r.planeModel };
     plane.scale = glm::vec3{ 10.0f, 1.0f, 10.0f };

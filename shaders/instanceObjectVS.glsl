@@ -5,10 +5,12 @@ layout (location = 2) in vec2 aTexCoords;
 layout (location = 3) in mat4 model;
 
 out VS_OUT{
-    vec3 normal;
     vec3 fragPos;
     vec2 texCoords;
 	vec4 fragPosDirLightSpace;
+
+	vec3 normal;
+	mat3 TBN;
 } vs_out;
 
 

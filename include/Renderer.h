@@ -21,13 +21,15 @@ public:
 	void updateMatrices(float windowWidth, float windowHeight) const;	
 
 private:
-	// light data
-	unsigned int lightDataUBO;
-	void createLightDataUBO();
-
-	//matrices data
+	// UBOs
 	unsigned int matricesUBO;
 	void createMatricesUBO();
+	static constexpr unsigned int MATRICES_UBO_BINDING{ 0 };
+
+	unsigned int lightDataUBO;
+	void createLightDataUBO();
+	static constexpr unsigned int LIGHT_DATA_UBO_BINDING{ 1 };
+
 
 	// post processing
 	Shader postProcShader{ "./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl" };
@@ -35,11 +37,7 @@ private:
 	unsigned int postProcFBO{ 0 };
 	unsigned int postProcTextureColorBuffer{ 0 };
 	void setUpPostProcessing(float windowWidth, float windowHeight);
-	
-	// rendering
-	void mainPass(float windowWidth, float windowHeight, const Scene& scene, const Resources& resrouces);
-	void renderObject(const SceneObject& obj) const;
-	void renderInstancedObject(const InstancedSceneObject& obj) const;
+	void renderPostProcessing() const;
 
 	//skybox
 	void renderSkyBox(unsigned int texture);
@@ -56,4 +54,24 @@ private:
 	static constexpr unsigned int SHADOW_WIDTH = 4096;
 	static constexpr unsigned int SHADOW_HEIGHT = 4096;
 	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 5;
+	glm::mat4 dirLightSpaceMat;
+
+
+	// forward rendering
+	void renderForward(float windowWidth, float windowHeight, const Scene& scene, const Resources& resrouces);
+	void renderObjectForward(const SceneObject& obj, const Resources& resources) const;
+	void renderInstancedObject(const InstancedSceneObject& obj, const Resources& resources) const;
+
+	// deferred rendering
+	unsigned int gBuffer;
+	unsigned int gPosition;
+	unsigned int gNormal;
+	unsigned int gAlbedoSpec;
+	void renderDeferred(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources);
+	void renderObjectDeferred(const SceneObject& obj) const;
+	void setUpGBuffer(float windowWidth, float windowHeight);
+	Shader gBufferShader{"./shaders/gBufferVS.glsl", "./shaders/gBufferFS.glsl" };
+
+	// rendering helper
+	const Material* getMaterial(const SceneObject& obj, const Mesh& mesh) const;
 };

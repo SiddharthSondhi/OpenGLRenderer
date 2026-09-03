@@ -14,3 +14,9 @@
 	- better PCF
 - fix city model textures (https://sketchfab.com/3d-models/city-scene-c00b3b8c71594890a2a3c46c20a30b5c?)
 - better way to name/id objects in the scene
+- automatic exposure?
+- bloom w/ gausian blurr
+- update/reorganize GUI code (maybe some sort of seperate data and settings structure)?
+- make instanced objects work with other materials
+- instanced objects w deferrred rendering
+- better visualization shaders for debugging gBuffer buffers

@@ -102,16 +102,6 @@ int main() {
 
     std::array<Scene*,  9> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene };
 
-    // settings
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
-    glEnable(GL_STENCIL_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_MULTISAMPLE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //wireframe mode
-
     // ---------------------------------------Rendering Loop-------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         // time logic
@@ -136,7 +126,7 @@ int main() {
         renderer.render(windowWidth, windowHeight, *currentScene, resources);
 
         // gui
-        GUI::define(gui);
+        GUI::define();
         GUI::render();
 
         glfwSwapBuffers(window);

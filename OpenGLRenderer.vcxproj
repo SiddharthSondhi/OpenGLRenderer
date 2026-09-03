@@ -142,7 +142,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\BasicMaterial.cpp" />
-    <ClCompile Include="src\Material.cpp" />
     <ClCompile Include="src\PhongMaterial.cpp" />
     <ClCompile Include="src\PointLight.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
@@ -201,12 +200,13 @@
     <ClInclude Include="src\VertexData.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\deferredPhongFS.glsl" />
     <None Include="shaders\depthDebugFS.glsl" />
     <None Include="shaders\depthDebugVS.glsl" />
+    <None Include="shaders\gBufferFS.glsl" />
+    <None Include="shaders\gBufferVS.glsl" />
     <None Include="shaders\shadowMapFS.glsl" />
     <None Include="shaders\shadowMapVS.glsl" />
-    <None Include="shaders\solidColorFS.glsl" />
-    <None Include="shaders\solidColorVS.glsl" />
     <None Include="shaders\depthFS.glsl" />
     <None Include="shaders\depthVS.glsl" />
     <None Include="shaders\explodeNormalsFS.glsl" />
@@ -215,19 +215,17 @@
     <None Include="shaders\frameBufferFS.glsl" />
     <None Include="shaders\frameBufferVS.glsl" />
     <None Include="shaders\instanceObjectVS.glsl" />
-    <None Include="shaders\lightFS.glsl" />
-    <None Include="shaders\lightVS.glsl" />
+    <None Include="shaders\solidColorFS.glsl" />
+    <None Include="shaders\solidColorVS.glsl" />
     <None Include="shaders\normalsFS.glsl" />
     <None Include="shaders\normalsGS.glsl" />
     <None Include="shaders\normalsVS.glsl" />
-    <None Include="shaders\objectFS.glsl" />
-    <None Include="shaders\objectVS.glsl" />
+    <None Include="shaders\phongFS.glsl" />
+    <None Include="shaders\phongVS.glsl" />
     <None Include="shaders\reflectiveFS.glsl" />
     <None Include="shaders\reflectiveVS.glsl" />
     <None Include="shaders\refractiveFS.glsl" />
     <None Include="shaders\refractiveVS.glsl" />
-    <None Include="shaders\simpleFS.glsl" />
-    <None Include="shaders\simpleVS.glsl" />
     <None Include="shaders\skyboxFS.glsl" />
     <None Include="shaders\skyboxVS.glsl" />
   </ItemGroup>

@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-Model::Model(std::string path, const Shader& shader, const ModelLoadOptions& options) {
+Model::Model(std::string path, const ModelLoadOptions& options) {
     unsigned int flags{ aiProcess_Triangulate};
     if (options.flipUVs) flags |= aiProcess_FlipUVs;
     if (options.genSmoothNormals) flags |= aiProcess_GenSmoothNormals;
@@ -27,7 +27,7 @@ Model::Model(std::string path, const Shader& shader, const ModelLoadOptions& opt
 	}
 
     directory = path.substr(0, path.find_last_of('/'));
-    processMaterials(scene, shader);
+    processMaterials(scene);
 	processNode(scene->mRootNode, scene, options);
 }
 
@@ -37,7 +37,7 @@ Model::Model(const Mesh& mesh, const Material& material) {
 }
 
 
-void Model::processMaterials(const aiScene* scene, const Shader& shader) {
+void Model::processMaterials(const aiScene* scene) {
     materials.reserve(scene->mNumMaterials);
 
     for (unsigned int i{ 0 }; i < scene->mNumMaterials; i++) {
@@ -54,10 +54,10 @@ void Model::processMaterials(const aiScene* scene, const Shader& shader) {
         std::vector<Texture> normalMaps = loadMaterialTextures(assimpMat, aiTextureType_HEIGHT, scene);
         textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 
-        float shininess = 128.0f;
+        float shininess = 256.0f;
         assimpMat->Get(AI_MATKEY_SHININESS, shininess);
 
-        materials.emplace_back(std::make_unique<PhongMaterial>(shader, std::move(textures), shininess));
+        materials.emplace_back(std::make_unique<PhongMaterial>(std::move(textures), shininess));
     }
 }
 

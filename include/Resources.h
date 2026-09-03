@@ -14,16 +14,15 @@
 
 struct Resources {
 	// shaders
-	Shader instanceObjectShader{ "./shaders/instanceObjectVS.glsl", "./shaders/objectFS.glsl" };
-	Shader objectShader{ "./shaders/objectVS.glsl", "./shaders/objectFS.glsl" };
-    Shader simpleShader{ "./shaders/simpleVS.glsl", "./shaders/simpleFS.glsl" };
-    Shader lightShader{ "./shaders/lightVS.glsl", "./shaders/lightFS.glsl" };
+	Shader instanceObjectShader{ "./shaders/instanceObjectVS.glsl", "./shaders/phongFS.glsl" };
+	Shader phongShader{ "./shaders/phongVS.glsl", "./shaders/phongFS.glsl" };
+    Shader solidColorShader{ "./shaders/solidColorVS.glsl", "./shaders/solidColorFS.glsl" };
     Shader depthShader{"./shaders/depthVS.glsl", "./shaders/depthFS.glsl"};
     Shader reflectiveShader{"./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl"};
     Shader refractiveShader{"./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl"};
     Shader explodeNormalsShader{"./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl"};
     Shader normalVisShader{"./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl"};
-    Shader solidColorShader{ "./shaders/solidColorVS.glsl", "./shaders/solidColorFS.glsl" };
+    Shader deferredPhongShader{ "./shaders/frameBufferVS.glsl", "./shaders/deferredPhongFS.glsl" };
 
     //skyboxes
     std::array<unsigned int, 13> skyboxes{
@@ -55,13 +54,13 @@ struct Resources {
 
 
     // materials
-    SolidColorMaterial redMat{ lightShader, Colors::red };
-    SolidColorMaterial blueMat{ lightShader, Colors::blue };
-    SolidColorMaterial greenMat{ lightShader, Colors::green };
-    SolidColorMaterial whiteMat{ lightShader, Colors::white };
-    PhongMaterial marbleMat{ objectShader, {{boxMarbleTex, Texture::diffuse}} };
-    PhongMaterial woodMat{ objectShader, {{woodTex, Texture::diffuse}} };
-    PhongMaterial brickWallMat{ objectShader, {{brickWallTex, Texture::diffuse}, {brickWallNormalMap, Texture::normal}}, 256.0f };
+    SolidColorMaterial redMat{ Colors::red };
+    SolidColorMaterial blueMat{ Colors::blue };
+    SolidColorMaterial greenMat{ Colors::green };
+    SolidColorMaterial whiteMat{ Colors::white };
+    PhongMaterial marbleMat{ {{boxMarbleTex, Texture::diffuse}} };
+    PhongMaterial woodMat{ {{woodTex, Texture::diffuse}} };
+    PhongMaterial brickWallMat{ {{brickWallTex, Texture::diffuse}, {brickWallNormalMap, Texture::normal}}, 256.0f };
     BasicMaterial normalsVisMaterial{ normalVisShader };
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };
@@ -71,18 +70,16 @@ struct Resources {
     Mesh cubeMesh{ VertexData::cube, {3, 3, 2} };
     Mesh planeMesh{ VertexData::plane, {3, 3, 2}};
     Mesh tunnelMesh{ VertexData::insideOutCube, {3, 3, 2} };
-    //Mesh grassMesh{ VertexData::transparent, {3, 2} , {{grassTex, Texture::diffuse}} };
-    //Mesh windowMesh{ VertexData::transparent, {3, 2}, {{windowTex, Texture::diffuse}} };
 
 	// models
-    Model planetModel{ "./resources/models/planet/planet.obj", objectShader  };
-    Model asteroidModel{ "./resources/models/rock/rock.obj",  instanceObjectShader, { true } };
-    Model backpackModel{ "./resources/models/backpack/backpack.obj", objectShader , { false, true } };
+    Model planetModel{ "./resources/models/planet/planet.obj" };
+    Model asteroidModel{ "./resources/models/rock/rock.obj", { true } };
+    Model backpackModel{ "./resources/models/backpack/backpack.obj", { false, true } };
     Model lightModel{ cubeMesh, whiteMat };
     Model cubeModel{ cubeMesh, marbleMat };
     Model planeModel{ planeMesh, woodMat };
-    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", objectShader, { true } };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb", objectShader };
-    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj", objectShader };
+    Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", { true } };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" };
+    Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj" };
     Model tunnelModel{ tunnelMesh, woodMat };
 };

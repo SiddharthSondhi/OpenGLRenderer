@@ -2,8 +2,8 @@
 #include <glad/glad.h>
 #include <iostream>
 
-PhongMaterial::PhongMaterial(const Shader& shader, std::vector<Texture> textures, float shininess)
-	: Material{ shader }, textures{ textures } , shininess {shininess}
+PhongMaterial::PhongMaterial(std::vector<Texture> textures, float shininess)
+	: textures{ textures } , shininess {shininess}
 {
 	for (const Texture& t : textures) {
 		if (t.type == Texture::normal)
@@ -11,8 +11,7 @@ PhongMaterial::PhongMaterial(const Shader& shader, std::vector<Texture> textures
 	}
 }
 
-void PhongMaterial::bind() const{
-	shader->use();
+void PhongMaterial::bind(const Shader& shader) const{
 	int diffuseNum{ 1 }, specularNum{ 1 }, normalNum{ 1 };
 
 	// unbind previous textures
@@ -40,18 +39,23 @@ void PhongMaterial::bind() const{
 			break;
 		}
 
-		shader->setInt(uniformName, i);
+		shader.setInt(uniformName, i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 
 	glActiveTexture(GL_TEXTURE0);
 
-	shader->setVec2("material.textureScale", textureScale);
-	shader->setBool("material.hasNormalMap", hasNormalMap);
-	shader->setFloat("material.shininess", shininess);
+	shader.setVec2("material.textureScale", textureScale);
+	shader.setBool("material.hasNormalMap", hasNormalMap);
+	shader.setFloat("material.shininess", shininess);
 }
 
 std::unique_ptr<Material> PhongMaterial::clone() const {
 	return std::make_unique<PhongMaterial>(*this);
 }
+
+Material::Type PhongMaterial::getType() const {
+	return Phong;
+}
+
 

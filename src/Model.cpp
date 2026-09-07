@@ -27,7 +27,7 @@ Model::Model(std::string path, const ModelLoadOptions& options) {
 	}
 
     directory = path.substr(0, path.find_last_of('/'));
-    processMaterials(scene);
+    processMaterials(scene, options);
 	processNode(scene->mRootNode, scene, options);
 }
 
@@ -37,7 +37,7 @@ Model::Model(const Mesh& mesh, const Material& material) {
 }
 
 
-void Model::processMaterials(const aiScene* scene) {
+void Model::processMaterials(const aiScene* scene, const ModelLoadOptions& options) {
     materials.reserve(scene->mNumMaterials);
 
     for (unsigned int i{ 0 }; i < scene->mNumMaterials; i++) {
@@ -46,11 +46,29 @@ void Model::processMaterials(const aiScene* scene) {
         unsigned int diffuseTex = loadMaterialTextures(assimpMat, aiTextureType_DIFFUSE, scene);
         unsigned int specularTex = loadMaterialTextures(assimpMat, aiTextureType_SPECULAR, scene);
         unsigned int normalTex = loadMaterialTextures(assimpMat, aiTextureType_HEIGHT, scene);
+        unsigned int emissionTex = loadMaterialTextures(assimpMat, aiTextureType_EMISSIVE, scene);
 
-        float shininess = 256.0f;
-        assimpMat->Get(AI_MATKEY_SHININESS, shininess);
+        aiColor3D diffColor{ 1.0f, 1.0f, 1.0f };
+        assimpMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffColor);
 
-        materials.emplace_back(std::make_unique<PhongMaterial>(diffuseTex, specularTex, normalTex, shininess));
+        aiColor3D specColor{ 1.0f, 1.0f, 1.0f };
+        assimpMat->Get(AI_MATKEY_COLOR_SPECULAR, specColor);
+
+        aiColor3D emissiveColor{ 1.0f, 1.0f, 1.0f };
+        assimpMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+
+        materials.emplace_back(std::make_unique<PhongMaterial>
+            (diffuseTex, specularTex, normalTex, emissionTex,
+            glm::vec3{ diffColor.r, diffColor.g, diffColor.g }, 
+            glm::vec3{ specColor.r, specColor.g, specColor.b },
+            glm::vec3{ emissiveColor.r, emissiveColor.g, emissiveColor.b }
+        ));
+
+        if (options.printDebugInfo) {
+            std::cout << "Material# " << i << ":\n";
+            printMaterialInfo(assimpMat);
+            std::cout << "\n";
+        }
     }
 }
 
@@ -160,10 +178,6 @@ unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, co
     case aiTextureType_DIFFUSE:
         gammaCorrected = true;
         break;
-    case aiTextureType_SPECULAR:
-        break;
-    case aiTextureType_HEIGHT:
-        break;
     }
 
     unsigned int texture;
@@ -198,6 +212,95 @@ const std::vector<Mesh>& Model::getMeshes() const {
 
 const std::vector<std::unique_ptr<Material>>& Model::getMaterials() const {
     return materials;
+}
+
+void Model::printMaterialInfo(const aiMaterial* mat) const {
+    // print base material colors
+    std::cout << "Material Base Colors:\n";
+    aiColor3D color;
+
+    if (mat->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+        std::cout << "Diffuse color: "
+            << color.r << ", "
+            << color.g << ", "
+            << color.b << '\n';
+    }
+
+    if (mat->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
+        std::cout << "Specular color: "
+            << color.r << ", "
+            << color.g << ", "
+            << color.b << '\n';
+    }
+
+    if (mat->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS) {
+        std::cout << "Emissive color: "
+            << color.r << ", "
+            << color.g << ", "
+            << color.b << '\n';
+    }
+
+    // print material opacity
+    float opacity;
+    if (mat->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS) {
+        std::cout << "Opacity: " << opacity << '\n';
+    }
+
+    // print material shininess
+    float shininess;
+    if (mat->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS) {
+        std::cout << "Shininess: " << shininess << '\n';
+    }
+
+    // print material shininess
+    float shininessStrength;
+    if (mat->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength) == AI_SUCCESS) {
+        std::cout << "Shininess strength: " << shininessStrength << '\n';
+    }
+
+    std::cout << "\nMaterial Textures:\n";
+
+    // print material textures
+    aiString path;
+    std::cout << "Diffuse: " << mat->GetTextureCount(aiTextureType_DIFFUSE);
+    if (mat->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "BaseColor: " << mat->GetTextureCount(aiTextureType_BASE_COLOR);
+    if (mat->GetTexture(aiTextureType_BASE_COLOR, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Specular: " << mat->GetTextureCount(aiTextureType_SPECULAR);
+    if (mat->GetTexture(aiTextureType_SPECULAR, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Normals: " << mat->GetTextureCount(aiTextureType_NORMALS);
+    if (mat->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Metalness: " << mat->GetTextureCount(aiTextureType_METALNESS);
+    if (mat->GetTexture(aiTextureType_METALNESS, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Roughness: " << mat->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS);
+    if (mat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Ambient Occlusion: " << mat->GetTextureCount(aiTextureType_AMBIENT_OCCLUSION);
+    if (mat->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
+
+    std::cout << "Emissive: " << mat->GetTextureCount(aiTextureType_EMISSIVE);
+    if (mat->GetTexture(aiTextureType_EMISSIVE, 0, &path) == AI_SUCCESS)
+        std::cout << " Path: " << path.C_Str();
+    std::cout << "\n";
 }
 
 

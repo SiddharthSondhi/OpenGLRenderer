@@ -72,6 +72,8 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	glBindTexture(GL_TEXTURE_2D, gNormal);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, gEmission);
 
 	resources.deferredPhongShader.use();
 
@@ -83,14 +85,31 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	resources.deferredPhongShader.setInt("gPosition", 0);
 	resources.deferredPhongShader.setInt("gNormal", 1);
 	resources.deferredPhongShader.setInt("gAlbedoSpec", 2);
+	resources.deferredPhongShader.setInt("gEmission", 3);
 	resources.deferredPhongShader.setMat4("viewToDirLightSpaceMat", dirLightSpaceMat * glm::inverse(camera.getViewMatrix()));
 
 	screenQuadMesh.drawGeometry();
 
-	//copy depth buffer into postProfFBO
+	//copy depth buffer into postProcFBO
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postProcFBO);
 	glBlitFramebuffer(0, 0, windowWidth, windowHeight, 0, 0, windowWidth, windowHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+	//render rest of objects with normal forward rendering
+	glEnable(GL_DEPTH_TEST);
+	for (const SceneObject& obj : scene.getSceneObjects()) {
+		renderObjectDeferredForward(obj, resources);
+	}
+
+	// loop thorugh all point lights and draw them
+	for (const PointLight& pointLight : scene.getPointLights()) {
+		renderObjectForward(pointLight.obj, resources);
+	}
+
+	//loop through all instanced object and draw them
+	for (const InstancedSceneObject& obj : scene.getInstancedObjects()) {
+		renderInstancedObject(obj, resources);
+	}
 }
 
 void Renderer::renderForward(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources){
@@ -100,7 +119,7 @@ void Renderer::renderForward(float windowWidth, float windowHeight, const Scene&
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glEnable(GL_BLEND);
+	glDisable(GL_BLEND);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -227,6 +246,45 @@ void Renderer::renderObjectDeferred(const SceneObject& obj) const {
 	}
 }
 
+void Renderer::renderObjectDeferredForward(const SceneObject& obj, const Resources& resources) const {
+	glm::mat4 modelMat{ obj.getModelMatrix() };
+
+	for (const Mesh& mesh : obj.getModel()->getMeshes()) {
+		const Material* material{ getMaterial(obj, mesh) };
+		const Material::Type matType{ material->getType() };
+
+		//choose shader based on material
+		const Shader* shader{ nullptr };
+
+		// dont render if already rendered through deferred method
+		if (matType == Material::Phong)
+			continue;
+		// if basic material, then shader selected from material
+		else if (matType == Material::Basic)
+			shader = static_cast<const BasicMaterial*>(material)->shader;
+		else if (matType == Material::SolidColor)
+			shader = &resources.solidColorShader;
+
+		if (!shader) {
+			std::cout << "ERROR::NO SHADER SET\n";
+			return;
+		}
+
+		shader->use();
+
+		//update model matrix
+		shader->setMat4("model", modelMat);
+
+		//update normal matrix
+		glm::mat3 normalMat = glm::transpose(glm::inverse(camera.getViewMatrix() * modelMat));
+		shader->setMat3("normalMat", normalMat);
+
+		material->bind(*shader);
+		mesh.drawGeometry();
+	}
+}
+
+
 const Material* Renderer::getMaterial(const SceneObject& obj, const Mesh& mesh) const {
 	const Material* material;
 	if (obj.getMaterialOverride()) {
@@ -299,7 +357,7 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 	//spot light
 	lightData.spotLight.position = glm::vec4{ 0.0f };
 	lightData.spotLight.direction = glm::normalize(view * glm::vec4{ camera.front, 0.0f });
-	lightData.enableFlashLight = enableFlashLight ? glm::vec4(1.0f) : glm::vec4(0.0f);
+	lightData.enableFlashLightNumPtLights = { enableFlashLight, scene.getPointLights().size(), 0.0f, 0.0f };
 
 	glBindBuffer(GL_UNIFORM_BUFFER, lightDataUBO);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(GPUData::LightData), reinterpret_cast<void*>(&lightData));
@@ -411,7 +469,7 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 	
-	// color (3 bytes) + specular (last byte) - format RGBA (4 bytes) color buffer 
+	// color (3 bytes) + specular (1 byte) - format RGBA (8 bytes) color buffer 
 	glGenTextures(1, &gAlbedoSpec);
 	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -419,16 +477,24 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
 
+	// emission color buffer
+	glGenTextures(1, &gEmission);
+	glBindTexture(GL_TEXTURE_2D, gEmission);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gEmission, 0);
+
 	// tell OpenGL which color attachments we'll use for rendering 
-	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	glDrawBuffers(3, attachments);
+	unsigned int attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+	glDrawBuffers(4, attachments);
 
 	// create and attach depth buffer (renderbuffer)
-	unsigned int rboDepth;
-	glGenRenderbuffers(1, &rboDepth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	unsigned int rboDepthStencil;
+	glGenRenderbuffers(1, &rboDepthStencil);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowWidth, windowHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil);
 	
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -439,6 +505,7 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	gui.gPosition = gPosition;
 	gui.gNormal = gNormal;
 	gui.gAlbedoSpec = gAlbedoSpec;
+	gui.gEmission = gEmission;
 }
 
 void Renderer::init(float windowWidth, float windowHeight) {

@@ -14,6 +14,7 @@ struct ModelLoadOptions {
 	bool flipUVs{ false };
 	bool calcTangentSpace{ false };
 	bool genSmoothNormals{ true };
+	bool printDebugInfo{ false };
 };
 
 class Model {
@@ -32,6 +33,8 @@ private:
 
 	void processNode(aiNode* node, const aiScene* scene, const ModelLoadOptions& options);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptions& options);
-	void processMaterials(const aiScene* scene);
+	void processMaterials(const aiScene* scene, const ModelLoadOptions& options);
 	unsigned int loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene);
+
+	void printMaterialInfo(const aiMaterial* mat) const;
 };

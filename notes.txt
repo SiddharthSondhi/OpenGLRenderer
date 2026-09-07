@@ -12,6 +12,7 @@
 	- dynamically update shadow map based on camera frustum
 	- cascaded shadow maps
 	- better PCF
+	- fix peter panning
 - fix city model textures (https://sketchfab.com/3d-models/city-scene-c00b3b8c71594890a2a3c46c20a30b5c?)
 - better way to name/id objects in the scene
 - automatic exposure?
@@ -20,3 +21,6 @@
 - make instanced objects work with other materials
 - instanced objects w deferrred rendering
 - better visualization shaders for debugging gBuffer buffers
+- debug labels for renderdoc
+- light volumes for large amount of lights in deferred rendering
+- fix color banding issue for dark textures in deferred path

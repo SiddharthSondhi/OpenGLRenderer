@@ -53,7 +53,7 @@ private:
 	unsigned int shadowMap;
 	static constexpr unsigned int SHADOW_WIDTH = 4096;
 	static constexpr unsigned int SHADOW_HEIGHT = 4096;
-	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 3;
+	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 4;
 	glm::mat4 dirLightSpaceMat;
 
 
@@ -67,8 +67,10 @@ private:
 	unsigned int gPosition;
 	unsigned int gNormal;
 	unsigned int gAlbedoSpec;
+	unsigned int gEmission;
 	void renderDeferred(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources);
 	void renderObjectDeferred(const SceneObject& obj) const;
+	void renderObjectDeferredForward(const SceneObject& obj, const Resources& resources) const;
 	void setUpGBuffer(float windowWidth, float windowHeight);
 	Shader gBufferShader{"./shaders/gBufferVS.glsl", "./shaders/gBufferFS.glsl" };
 

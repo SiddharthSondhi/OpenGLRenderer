@@ -257,3 +257,16 @@ Scene buildHDRScene(Resources& r) {
 
     return scene;
 }
+
+Scene buildBackroomsScene(Resources& r) {
+    Scene scene;
+
+    //scene.dirLight = { Colors::white };
+    SceneObject backrooms{ &r.backroomsModel };
+    backrooms.rotation = { -90, 0, 0 };
+    
+    scene.addObject("backrooms", backrooms);
+
+
+    return scene;
+}

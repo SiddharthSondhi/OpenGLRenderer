@@ -61,24 +61,27 @@ namespace GUI {
 
 	void renderDebugUI() {
 		ImGui::Begin("Render Debug");
-		float width{ 480 }, height{ 270 };
+		constexpr float DEBUG_WIDTH{ 480 };
+		constexpr float DEBUG_HEIGHT{ 270 };
 
 		if (ImGui::CollapsingHeader("Shadows")){
 			ImGui::Text("Directional Shadow Map");
-			ImGui::Image(static_cast<ImTextureID>(gui.shadowMap), ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(static_cast<ImTextureID>(gui.shadowMap), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 		}
 
 
-		if (ImGui::CollapsingHeader("G-Buffer"))
-		{
+		if (ImGui::CollapsingHeader("G-Buffer")){
 			ImGui::Text("Position");
-			ImGui::Image(static_cast<ImTextureID>(gui.gPosition), ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(static_cast<ImTextureID>(gui.gPosition), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 
 			ImGui::Text("Normal");
-			ImGui::Image(static_cast<ImTextureID>(gui.gNormal),ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(static_cast<ImTextureID>(gui.gNormal),ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 
 			ImGui::Text("Albedo / Specular");
-			ImGui::Image(static_cast<ImTextureID>(gui.gAlbedoSpec),ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(static_cast<ImTextureID>(gui.gAlbedoSpec),ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
+
+			ImGui::Text("Emission");
+			ImGui::Image(static_cast<ImTextureID>(gui.gEmission), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 		}
 		
 		ImGui::End();

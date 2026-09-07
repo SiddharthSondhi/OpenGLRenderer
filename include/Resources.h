@@ -25,17 +25,13 @@ struct Resources {
     Shader deferredPhongShader{ "./shaders/frameBufferVS.glsl", "./shaders/deferredPhongFS.glsl" };
 
     //skyboxes
-    std::array<unsigned int, 13> skyboxes{
+    std::array<unsigned int, 9> skyboxes{
         0,
         Utils::loadCubemap("./resources/textures/cubemaps/SkyHighFluffyCloud"),
         Utils::loadCubemap("./resources/textures/cubemaps/PlanetaryEarth"),
-        Utils::loadCubemap("./resources/textures/cubemaps/MegaSun"),
-        Utils::loadCubemap("./resources/textures/cubemaps/highFantasy"),
-        Utils::loadCubemap("./resources/textures/cubemaps/underTheSea"),
         Utils::loadCubemap("./resources/textures/cubemaps/CasualDay"),
         Utils::loadCubemap("./resources/textures/cubemaps/DayInTheClouds"),
         Utils::loadCubemap("./resources/textures/cubemaps/DarkStorm"),
-        Utils::loadCubemap("./resources/textures/cubemaps/CoriolisNight"),
         Utils::loadCubemap("./resources/textures/cubemaps/space1"),
         Utils::loadCubemap("./resources/textures/cubemaps/space2"),
         Utils::loadCubemap("./resources/textures/cubemaps/space3")
@@ -60,7 +56,7 @@ struct Resources {
     SolidColorMaterial whiteMat{ Colors::white };
     PhongMaterial marbleMat{ boxMarbleTex };
     PhongMaterial woodMat{ woodTex };
-    PhongMaterial brickWallMat{ brickWallTex, 0, brickWallNormalMap, 256.0f };
+    PhongMaterial brickWallMat{ brickWallTex, 0, brickWallNormalMap};
     BasicMaterial normalsVisMaterial{ normalVisShader };
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };
@@ -79,7 +75,8 @@ struct Resources {
     Model cubeModel{ cubeMesh, marbleMat };
     Model planeModel{ planeMesh, woodMat };
     Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", { true } };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" , { true }  };
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj" };
     Model tunnelModel{ tunnelMesh, woodMat };
+    Model backroomsModel{ "./resources/models/backrooms/backrooms_vr.glb", {true, true, false, true} };
 };

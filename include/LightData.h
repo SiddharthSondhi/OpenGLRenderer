@@ -6,7 +6,7 @@
 #include <array>
 
 namespace GPUData {
-	constexpr size_t MAX_NUMBER_POINT_LIGHTS{ 8 };
+	constexpr size_t MAX_NUMBER_POINT_LIGHTS{ 128 };
 
 	struct DirLightData {
 		glm::vec4 direction;
@@ -45,6 +45,6 @@ namespace GPUData {
 		DirLightData dirLight;
 		SpotLightData spotLight;
 		std::array<PointLightData, MAX_NUMBER_POINT_LIGHTS> pointLights;
-		glm::vec4 enableFlashLight{ 0.0f };
+		glm::vec4 enableFlashLightNumPtLights{ 0.0f }; // {enable flash light, number of point lights, unused, unused}
 	};
 };

@@ -33,27 +33,30 @@ struct SpotLight{
 	vec4 specular;
 };
 
-#define NR_POINT_LIGHTS 8
+#define MAX_NUMBER_POINT_LIGHTS 128
 
 layout(std140, binding = 1) uniform Lights{
 	DirLight dirLight;
 	SpotLight spotLight;
-	PointLight pointLights[NR_POINT_LIGHTS];
-	vec4 enableFlashLight; 
+	PointLight pointLights[MAX_NUMBER_POINT_LIGHTS];
+	vec4 enableFlashLightNumPtLights; // {enable flash light, number of point lights, unused, unused}
 };
 
 uniform sampler2D shadowMap;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D gEmission;
 uniform mat4 viewToDirLightSpaceMat;
-
 
 //prototypes
 vec3 calcDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec); 
 vec3 calcPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec);  
 vec3 calcSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec);  
 float calcDirLightShadow(vec3 fragPos, vec3 normal, vec3 lightDirection);
+
+// global vars
+float shininess = 256.0;
 
 void main(){
     //------------------------- doing all calculations in VIEW SPACE -----------------------
@@ -63,10 +66,7 @@ void main(){
 	vec4 texDiff = vec4(texture(gAlbedoSpec, texCoords).rgb, 1.0);
 	float specVal = texture(gAlbedoSpec, texCoords).a;
 	vec4  texSpec = vec4(specVal, specVal, specVal, 1.0);
-	
-	//discard fragment if alpha below threshold
-	//if(texDiff.a < 0.05)
-       // discard;
+	vec4 texEmission = texture(gEmission, texCoords);
 
 	vec3 norm = texture(gNormal, texCoords).rgb;
 	vec3 viewDir = normalize(-fragPos);
@@ -76,16 +76,16 @@ void main(){
 	result += calcDirLight(dirLight, fragPos, norm, viewDir, texDiff, texSpec);
 
 	//point lights
-	for(int i = 0; i < NR_POINT_LIGHTS; i++){
+	for(int i = 0; i < enableFlashLightNumPtLights.y; i++){
         result += calcPointLight(pointLights[i], fragPos, norm, viewDir, texDiff, texSpec);  
     }
 
 	//spot light
-	if (enableFlashLight.x > 0)
+	if (enableFlashLightNumPtLights.x > 0)
 		result += calcSpotLight(spotLight, fragPos, norm, viewDir, texDiff, texSpec);
 
 
-	fragColor = vec4(result, 1.0);
+	fragColor = vec4(result + texEmission.rgb, 1.0);
 }
 
 vec3 calcDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
@@ -96,8 +96,7 @@ vec3 calcDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 
 
 	//specular 
     vec3 halfwayDir = normalize(lightDir + viewDir);
-	//float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-	float spec = pow(max(dot(normal, halfwayDir), 0.0), 256);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 
 
 	//combine results
@@ -122,8 +121,7 @@ vec3 calcPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, v
 
     //specular
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    //float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), 256);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 
 
     // attenuation
@@ -148,8 +146,7 @@ vec3 calcSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec
 
 	//specular
     vec3 halfwayDir = normalize(fragToLightDir + viewDir);
-	//float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-	float spec = pow(max(dot(normal, halfwayDir), 0.0), 256);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 
 
 	//attenuation

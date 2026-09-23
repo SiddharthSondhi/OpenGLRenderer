@@ -54,7 +54,13 @@ void Model::processMaterials(const aiScene* scene, const ModelLoadOptions& optio
         aiColor3D specColor{ 1.0f, 1.0f, 1.0f };
         assimpMat->Get(AI_MATKEY_COLOR_SPECULAR, specColor);
 
-        aiColor3D emissiveColor{ 1.0f, 1.0f, 1.0f };
+        aiColor3D emissiveColor;
+        // if no emission texture, then the default value will be 0, otherwise 1 (bc it is used to scale the texture)
+        if (emissionTex == 0)
+            emissiveColor = { 0, 0, 0 };
+        else
+            emissiveColor = { 1, 1, 1 };
+
         assimpMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
 
         materials.emplace_back(std::make_unique<PhongMaterial>

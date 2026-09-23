@@ -8,7 +8,7 @@
 class PhongMaterial : public Material {
 public:
 	PhongMaterial(unsigned int diffuseTex, unsigned int specularTex = 0, unsigned int normalTex = 0, unsigned int emissionTex = 0,
-		glm::vec3 diffuseColor = glm::vec3{ 1.0f }, glm::vec3 specularColor = glm::vec3{ 1.0f }, glm::vec3 emissionColor = glm::vec3{ 1.0f });
+		glm::vec3 diffuseColor = glm::vec3{ 1.0f }, glm::vec3 specularColor = glm::vec3{ 1.0f }, glm::vec3 emissionColor = glm::vec3{ 0.0f });
 
 	void bind(const Shader& shader) const override;
 	std::unique_ptr<Material> clone() const override;

@@ -7,7 +7,6 @@
 class PointLight {
 public:
 	SceneObject obj;
-	glm::vec3 ambient{ Colors::black };
 	glm::vec3 diffuse{ Colors::white };
 	glm::vec3 specular{ Colors::white };
 

@@ -10,7 +10,6 @@ namespace GPUData {
 
 	struct DirLightData {
 		glm::vec4 direction;
-		glm::vec4 ambient{ Colors::white * .2f , 1.0f };
 		glm::vec4 diffuse{ Colors::white * .7f , 1.0f };
 		glm::vec4 specular{ Colors::white, 1.0f };
 	};
@@ -21,7 +20,6 @@ namespace GPUData {
 		//constant, linear, quadratic, unused
 		glm::vec4 attenuation{ 1.0f, 0.09f, 0.032f, 0.0f };
 
-		glm::vec4 ambient{ 0.0f };
 		glm::vec4 diffuse{ 0.0f };
 		glm::vec4 specular{ 0.0f };
 	};

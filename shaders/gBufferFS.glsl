@@ -24,6 +24,7 @@ struct Material{
 	vec2 textureScale;
 	bool hasNormalMap;
 	bool hasSpecularMap;
+	bool hasEmissionMap;
 };
 
 uniform Material material;
@@ -53,5 +54,8 @@ void main(){
 		gAlbedoSpec.a = 0.3;
 
 	// emission
-	gEmission = vec4(texture(material.texture_emission, material.textureScale * fs_in.texCoords).rgb * material.emissionColor, 1.0);
+	if (material.hasEmissionMap)
+		gEmission = vec4(texture(material.texture_emission, material.textureScale * fs_in.texCoords).rgb * material.emissionColor, 1.0);
+	else
+		gEmission = vec4(material.emissionColor, 1.0);
 }

@@ -7,7 +7,6 @@ out vec4 fragColor;
 // Create all light data structs using vec4 so that std140 UBO easy to use
 struct DirLight{
     vec4 direction;
-    vec4 ambient;
     vec4 diffuse;
     vec4 specular;
 };
@@ -17,7 +16,6 @@ struct PointLight{
 
 	vec4 attenuation; //constant, linear, quadratic
 
-	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
 };
@@ -42,12 +40,16 @@ layout(std140, binding = 1) uniform Lights{
 	vec4 enableFlashLightNumPtLights; // {enable flash light, number of point lights, unused, unused}
 };
 
-uniform sampler2D shadowMap;
+
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform sampler2D gEmission;
+uniform sampler2D shadowMap;
+uniform sampler2D SSAO;
+
 uniform mat4 viewToDirLightSpaceMat;
+uniform float AOPower;
 
 //prototypes
 vec3 calcDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec); 
@@ -84,6 +86,10 @@ void main(){
 	if (enableFlashLightNumPtLights.x > 0)
 		result += calcSpotLight(spotLight, fragPos, norm, viewDir, texDiff, texSpec);
 
+	//ambient light
+	vec3 ambientLight = vec3(0.2);
+	float AO = pow(texture(SSAO, texCoords).r, AOPower);
+	result += AO * ambientLight * texDiff.rgb;
 
 	fragColor = vec4(result + texEmission.rgb, 1.0);
 }
@@ -100,17 +106,16 @@ vec3 calcDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 
 
 
 	//combine results
-	vec3 ambient  = vec3(light.ambient)  * vec3(texDiff);
     vec3 diffuse  = vec3(light.diffuse)  * diff * vec3(texDiff);
     vec3 specular = vec3(light.specular) * spec * vec3(texSpec);
 
 	float shadow = calcDirLightShadow(fragPos, normal, lightDir);
-	return ambient + ((1.0 - shadow) * (diffuse + specular));
+	return ((1.0 - shadow) * (diffuse + specular));
 }
 
 vec3 calcPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 texSpec){
 	// skip if the light has no color
-	if (light.ambient == vec4(0.0) && light.diffuse == vec4(0.0) && light.specular == vec4(0.0)){
+	if (light.diffuse == vec4(0.0) && light.specular == vec4(0.0)){
 		return vec3(0.0);
 	}
 
@@ -129,11 +134,10 @@ vec3 calcPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, v
     float attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * (distance * distance));    
     
     // combine results
-    vec3 ambient  = vec3(light.ambient)  * vec3(texDiff);
     vec3 diffuse  = vec3(light.diffuse)  * diff * vec3(texDiff);
     vec3 specular = vec3(light.specular) * spec * vec3(texSpec);
     
-    return attenuation * (ambient + diffuse + specular);
+    return attenuation * (diffuse + specular);
 } 
 
 

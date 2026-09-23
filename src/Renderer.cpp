@@ -6,6 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <random>
+#include <cmath>
 
 void Renderer::render(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources) {
 	//shadow pass
@@ -60,6 +62,23 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 		renderObjectDeferred(obj);
 	}
 
+	//SSAO Pass
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, SSAONoiseTexture);
+	
+	SSAOShader.use();
+	
+	SSAOShader.setFloat("radius", gui.AORadius);
+	SSAOShader.setFloat("bias", gui.AOBias);
+
+	screenQuadMesh.drawGeometry();
+
 	//lighting pass
 	glBindFramebuffer(GL_FRAMEBUFFER, postProcFBO);
 	
@@ -75,18 +94,16 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, gEmission);
 
-	resources.deferredPhongShader.use();
-
-	//bind shadowMap 
 	glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, shadowMap);
-	resources.deferredPhongShader.setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
 
-	resources.deferredPhongShader.setInt("gPosition", 0);
-	resources.deferredPhongShader.setInt("gNormal", 1);
-	resources.deferredPhongShader.setInt("gAlbedoSpec", 2);
-	resources.deferredPhongShader.setInt("gEmission", 3);
+	glActiveTexture(GL_TEXTURE0 + SSAO_TEXTURE_UNIT);
+	glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+
+	resources.deferredPhongShader.use();
+
 	resources.deferredPhongShader.setMat4("viewToDirLightSpaceMat", dirLightSpaceMat * glm::inverse(camera.getViewMatrix()));
+	resources.deferredPhongShader.setFloat("AOPower", gui.AOPower);
 
 	screenQuadMesh.drawGeometry();
 
@@ -312,7 +329,6 @@ void Renderer::renderInstancedObject(const InstancedSceneObject& obj, const Reso
 
 void Renderer::renderSkyBox(unsigned int texture) {
 	skyboxShader.use();
-	skyboxShader.setInt("skybox", 0);
 	
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -336,7 +352,6 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 
 	//directional light
 	lightData.dirLight.direction = glm::normalize(view * glm::vec4{ scene.dirLight.direction, 0.0f });
-	lightData.dirLight.ambient = glm::vec4{ scene.dirLight.ambient, 1.0f };
 	lightData.dirLight.diffuse = glm::vec4{ scene.dirLight.diffuse, 1.0f };
 	lightData.dirLight.specular = glm::vec4{ scene.dirLight.specular, 1.0f };
 
@@ -349,7 +364,6 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 
 		lightData.pointLights[i].attenuation = glm::vec4{ light.constant, light.linear, light.quadratic, 1.0f };
 
-		lightData.pointLights[i].ambient = glm::vec4{ light.ambient, 1.0f };
 		lightData.pointLights[i].diffuse = glm::vec4{ light.diffuse, 1.0f };
 		lightData.pointLights[i].specular = glm::vec4{ light.specular, 1.0f };
 	}
@@ -410,7 +424,7 @@ void Renderer::setUpPostProcessing(float windowWidth, float windowHeight) {
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for postprocessing is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 void Renderer::updateMatrices(float windowWidth, float windowHeight) const {
@@ -444,8 +458,8 @@ void Renderer::setUpShadowMap() {
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for shadowmap is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	// gui setup
 	gui.shadowMap = shadowMap;
 }
 
@@ -459,6 +473,11 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// using CLAMP_TO_EDGE for SSAO when sampling near edge of texture (maybe change to clamp to border?)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
 	// normal color buffer
@@ -467,6 +486,11 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	// using CLAMP_TO_EDGE for SSAO when sampling near edge of texture (maybe change to clamp to border?)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 	
 	// color (3 bytes) + specular (1 byte) - format RGBA (8 bytes) color buffer 
@@ -475,6 +499,7 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
 
 	// emission color buffer
@@ -498,8 +523,7 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for gBuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for gBuffer is not complete!\n";
 
 	//gui setup
 	gui.gPosition = gPosition;
@@ -508,10 +532,96 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	gui.gEmission = gEmission;
 }
 
-void Renderer::init(float windowWidth, float windowHeight) {
+void Renderer::setUpSSAO(float windowWidth, float windowHeight) {
+	//create random kernal for sampling points - hemisphere in tangent space around +z axis
+	std::uniform_real_distribution<float> randomFloats{ 0.0f, 1.0f }; // generates random floats between [0, 1)
+	std::default_random_engine generator;
+	std::vector<glm::vec3> SSAOKernel;
+	constexpr int NUM_SAMPLES{ 64 };
+	for (int i{ 0 }; i < NUM_SAMPLES; i++) {
+		// this will generate vectors in a cube  {-1 to 1 x -1 to 1 x 0 to 1}
+		glm::vec3 sample{ randomFloats(generator) * 2.0f - 1.0f,
+						  randomFloats(generator) * 2.0f - 1.0f,
+						  randomFloats(generator) };
+
+		// now each vector is on surface of hemisphere instead of cube
+		sample = glm::normalize(sample);
+
+		// now each vector randomizes lenghth between 0 and 1
+		sample *= randomFloats(generator);
+		
+		// lerp betwen 0.1 and 1.0 using scale^2 as the percentage and scale the sample by it, this gives more values towards 0.1 as compared to 1.0
+		float scale{ static_cast<float>(i) / NUM_SAMPLES };
+		scale = std::lerp(0.1f, 1.0f, scale * scale);
+		sample *= scale;
+
+		SSAOKernel.push_back(sample);
+	}
+
+	// set up 4x4 texture for random rotations of kernal
+	std::vector<glm::vec3> SSAONoise;
+	for (int i{ 0 }; i < 16; i++) {
+		glm::vec3 noiseVal{ randomFloats(generator) * 2.0f - 1.0f,
+							randomFloats(generator) * 2.0f - 1.0f,
+							0.0f };
+		SSAONoise.push_back(noiseVal);
+	}
+
+	glGenTextures(1, &SSAONoiseTexture);
+	glBindTexture(GL_TEXTURE_2D, SSAONoiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0, GL_RGB, GL_FLOAT, SSAONoise.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//create framebuffer for SSAO
+	glGenFramebuffers(1, &SSAOFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOFBO);
+	
+	//only 1 color buffer attachment with just 1 component required
+	glGenTextures(1, &SSAOColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowWidth, windowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOColorBuffer, 0);
+
+	// finally check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for SSAO is not complete!\n";
+
+	// set uniforms
+	SSAOShader.use();
+	SSAOShader.setInt("gPosition", 0);
+	SSAOShader.setInt("gNormal", 1);
+	SSAOShader.setInt("noiseTexture", 2);
+
+	// Send kernel + rotation 
+	for (unsigned int i = 0; i < 64; ++i)
+		SSAOShader.setVec3("samples[" + std::to_string(i) + "]", SSAOKernel[i]);
+
+	//gui
+	gui.SSAOTexture = SSAOColorBuffer;
+}
+
+
+void Renderer::init(float windowWidth, float windowHeight, const Resources& resources) {
 	setUpPostProcessing(windowWidth, windowHeight);
 	createLightDataUBO();
 	createMatricesUBO();
 	setUpShadowMap();
 	setUpGBuffer(windowWidth, windowHeight);
+	setUpSSAO(windowWidth, windowHeight);
+
+	// set initial uniforms
+	resources.deferredPhongShader.use();
+
+	resources.deferredPhongShader.setInt("gPosition", 0);
+	resources.deferredPhongShader.setInt("gNormal", 1);
+	resources.deferredPhongShader.setInt("gAlbedoSpec", 2);
+	resources.deferredPhongShader.setInt("gEmission", 3);
+	resources.deferredPhongShader.setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("SSAO", SSAO_TEXTURE_UNIT);
 }

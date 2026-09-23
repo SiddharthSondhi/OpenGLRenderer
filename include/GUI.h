@@ -81,6 +81,12 @@ namespace GUI {
 		unsigned int gNormal{ 0 };
 		unsigned int gAlbedoSpec{ 0 };
 		unsigned int gEmission{ 0 };
+
+		//SSAO
+		unsigned int SSAOTexture{ 0 };
+		float AORadius{ 0.5 };
+		float AOBias{ 0.025 };
+		float AOPower{ 4 };
 	};
 
 	void init(GLFWwindow* window);

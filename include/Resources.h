@@ -22,7 +22,7 @@ struct Resources {
     Shader refractiveShader{"./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl"};
     Shader explodeNormalsShader{"./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl"};
     Shader normalVisShader{"./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl"};
-    Shader deferredPhongShader{ "./shaders/frameBufferVS.glsl", "./shaders/deferredPhongFS.glsl" };
+    Shader deferredPhongShader{ "./shaders/postProcVS.glsl", "./shaders/deferredPhongFS.glsl" };
 
     //skyboxes
     std::array<unsigned int, 9> skyboxes{
@@ -78,5 +78,5 @@ struct Resources {
     Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" , { true }  };
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj" };
     Model tunnelModel{ tunnelMesh, woodMat };
-    Model backroomsModel{ "./resources/models/backrooms/backrooms_vr.glb", {true, true, false, true} };
+    Model backroomsModel{ "./resources/models/backrooms/backrooms_vr.glb", {true, true, false} };
 };

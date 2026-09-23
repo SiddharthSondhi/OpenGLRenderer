@@ -33,6 +33,6 @@ layout(std140, binding = 0) uniform Matrices{
 	vs_out.normal = normalMat * aNormal;
 	vec3 T = normalize(vec3(view * model * vec4(aTangent,   0.0)));
     vec3 B = normalize(vec3(view * model * vec4(aBitangent, 0.0)));
-    vec3 N = normalize(vec3(view * model * vec4(aNormal,    0.0)));
+    vec3 N = normalize(normalMat * aNormal);
     vs_out.TBN = mat3(T, B, N);
  }

@@ -24,3 +24,9 @@
 - debug labels for renderdoc
 - light volumes for large amount of lights in deferred rendering
 - fix color banding issue for dark textures in deferred path
+- calculate fragPosDirLightSpace per vertex instead of per fragment for deferredPhongFS?
+- change random number gen (for SSAO)?
+- remove ambient componenent from point lights
+- gBufferVS.glsl/phongVS.glsl, reorthogonalize using gram schmidt process. Instead of using bitangent from assimp, figure out handedness first 
+  (to see order of cross product) then calculate bitangent after gram schmidth using N and T
+- organize GUI, add light settings for ambient light, directional light (maybe make them tied to the scene)

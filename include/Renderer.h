@@ -15,7 +15,7 @@ extern GUI::Settings gui;
 class Renderer {
 public:
 	void render(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources);
-	void init(float windowWidth, float windowHeight);
+	void init(float windowWidth, float windowHeight, const Resources& resources);
 
 	void updateLightData(const Scene& scene, bool enableFlashLight);
 	void updateMatrices(float windowWidth, float windowHeight) const;	
@@ -30,9 +30,8 @@ private:
 	void createLightDataUBO();
 	static constexpr unsigned int LIGHT_DATA_UBO_BINDING{ 1 };
 
-
 	// post processing
-	Shader postProcShader{ "./shaders/frameBufferVS.glsl", "./shaders/frameBufferFS.glsl" };
+	Shader postProcShader{ "./shaders/postProcVS.glsl", "./shaders/postProcFS.glsl" };
 	Mesh screenQuadMesh{ VertexData::screenQuad, {2, 2} };
 	unsigned int postProcFBO{ 0 };
 	unsigned int postProcTextureColorBuffer{ 0 };
@@ -56,7 +55,6 @@ private:
 	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 4;
 	glm::mat4 dirLightSpaceMat;
 
-
 	// forward rendering
 	void renderForward(float windowWidth, float windowHeight, const Scene& scene, const Resources& resrouces);
 	void renderObjectForward(const SceneObject& obj, const Resources& resources) const;
@@ -76,4 +74,12 @@ private:
 
 	// rendering helper
 	const Material* getMaterial(const SceneObject& obj, const Mesh& mesh) const;
+
+	//SSAO
+	unsigned int SSAOFBO;
+	unsigned int SSAONoiseTexture;
+	unsigned int SSAOColorBuffer;
+	static constexpr unsigned int SSAO_TEXTURE_UNIT = 5;
+	void setUpSSAO(float windowWidth, float windowHeight);
+	Shader SSAOShader{ "./shaders/SSAOVS.glsl", "./shaders/SSAOFS.glsl" };
 };

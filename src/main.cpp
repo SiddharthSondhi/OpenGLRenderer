@@ -85,11 +85,10 @@ int main() {
     
     //Renderer
     Renderer renderer;
-    renderer.init(windowWidth, windowHeight);
-
-    // scene objects
     Resources resources;
+    renderer.init(windowWidth, windowHeight, resources);
 
+    //Create Scenes
     Scene mainScene{ buildMainScene(resources) };
     Scene planetScene{ buildPlanetScene(resources) };
     Scene cityScene{ buildCityScene(resources) };

@@ -210,8 +210,8 @@
     <None Include="shaders\explodeNormalsFS.glsl" />
     <None Include="shaders\explodeNormalsGS.glsl" />
     <None Include="shaders\explodeNormalsVS.glsl" />
-    <None Include="shaders\frameBufferFS.glsl" />
-    <None Include="shaders\frameBufferVS.glsl" />
+    <None Include="shaders\postProcFS.glsl" />
+    <None Include="shaders\postProcVS.glsl" />
     <None Include="shaders\instanceObjectVS.glsl" />
     <None Include="shaders\solidColorFS.glsl" />
     <None Include="shaders\solidColorVS.glsl" />
@@ -226,6 +226,8 @@
     <None Include="shaders\refractiveVS.glsl" />
     <None Include="shaders\skyboxFS.glsl" />
     <None Include="shaders\skyboxVS.glsl" />
+    <None Include="shaders\SSAOFS.glsl" />
+    <None Include="shaders\SSAOVS.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\textures\awesomeface.png" />

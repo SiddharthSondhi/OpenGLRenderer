@@ -40,7 +40,7 @@ void PhongMaterial::bind(const Shader& shader) const{
 	shader.setVec2("material.textureScale", textureScale);
 	shader.setBool("material.hasNormalMap", !(normalTex == 0));
 	shader.setBool("material.hasSpecularMap", !(specularTex == 0));
-
+	shader.setBool("material.hasEmissionMap", !(emissionTex == 0));
 }
 
 std::unique_ptr<Material> PhongMaterial::clone() const {

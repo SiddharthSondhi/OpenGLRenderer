@@ -56,6 +56,11 @@ namespace GUI {
 			ImGui::SliderFloat("Exposure", &gui.exposure, 0.0f, 5.0f);
 		}
 
+		ImGui::Text("SSAO");
+		ImGui::SliderFloat("Radius", &gui.AORadius, 0.1f, 10.0f);
+		ImGui::SliderFloat("Bias", &gui.AOBias, 0.0f, 1.0f);
+		ImGui::SliderFloat("Power", &gui.AOPower, 0.1f, 20.0f);
+
 		ImGui::End();
 	}
 
@@ -75,13 +80,18 @@ namespace GUI {
 			ImGui::Image(static_cast<ImTextureID>(gui.gPosition), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 
 			ImGui::Text("Normal");
-			ImGui::Image(static_cast<ImTextureID>(gui.gNormal),ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::Image(static_cast<ImTextureID>(gui.gNormal), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 
 			ImGui::Text("Albedo / Specular");
 			ImGui::Image(static_cast<ImTextureID>(gui.gAlbedoSpec),ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 
 			ImGui::Text("Emission");
 			ImGui::Image(static_cast<ImTextureID>(gui.gEmission), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
+		}
+
+		if (ImGui::CollapsingHeader("SSAO")) {
+			ImGui::Text("SSAO");
+			ImGui::Image(static_cast<ImTextureID>(gui.SSAOTexture), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 		}
 		
 		ImGui::End();

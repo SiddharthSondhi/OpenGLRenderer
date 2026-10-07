@@ -270,3 +270,54 @@ Scene buildBackroomsScene(Resources& r) {
 
     return scene;
 }
+
+void updatePBRScene(Scene& scene, float deltaTime) {
+    float t{ static_cast<float>(glfwGetTime())};
+    constexpr float pi{ glm::pi<float>() };
+    float radius{ 8.0f };
+
+    scene.getPointLight("l1")->obj.position = glm::vec3(cos(t) * radius , sin(t) * radius, 20.0f );
+    scene.getPointLight("l2")->obj.position = glm::vec3(cos(t + pi / 2) * radius, sin(t + pi / 2) * radius, 20.0f);
+    scene.getPointLight("l3")->obj.position = glm::vec3(cos(t + pi ) * radius, sin(t + pi ) * radius, 20.0f);
+    scene.getPointLight("l4")->obj.position = glm::vec3(cos(t + 3 * pi / 2) * radius, sin(t + 3 * pi / 2) * radius, 20.0f);
+}
+
+Scene buildPBRScene(Resources& r) {
+    Scene scene;
+    scene.setUpdateFunc(updatePBRScene);
+
+    //scene.dirLight = { Colors::white };
+    for (int i{ 0 }; i < 8; i++) {
+        for (int j{ 0 }; j < 8; j++) {
+            PBRMaterial mat{ {0.5f, 0.0f, 0.0f}, glm::clamp( j / 7.0f, 0.05f, 1.0f), glm::clamp(i / 7.0f, 0.05f, 1.0f) };
+            SceneObject sphere{ &r.sphereModel, mat };
+            sphere.position = { i * 2 - 8, j * 2 - 8, 0.0 };
+            sphere.scale = glm::vec3{ .8 };
+            scene.addObject("sphere" + std::to_string(i), sphere);
+        }
+    }
+
+    SceneObject s1{ &r.sphereModel, {-12.0f, 0.0f, 0.0f} };
+    scene.addObject("s1", s1);
+
+    SceneObject s2{ &r.sphereModel, r.wispyGrass };
+    s2.position = { -15.0f, 0.0f, 0.0f };
+    scene.addObject("s2", s2);
+
+    SceneObject pl1{ &r.lightModel,  {-8.0f, 8.0f, 20.0f} };
+    pl1.scale = glm::vec3{ 0.2f };
+    SceneObject pl2{ &r.lightModel,  {8.0f, -8.0f, 20.0f} };
+    pl2.scale = glm::vec3{ 0.2f };
+    SceneObject pl3{ &r.lightModel,  {-8.0f, -8.0f, 20.0f} };
+    pl3.scale = glm::vec3{ 0.2f };
+    SceneObject pl4{ &r.lightModel,  {8.0f, 8.0f, 20.0f} };
+    pl4.scale = glm::vec3{ 0.2f };
+
+    scene.addPointLight("l1", { pl1 , {23.47, 21.31, 20.79 } });
+    scene.addPointLight("l2", { pl2 , {23.47, 21.31, 20.79 } });
+    scene.addPointLight("l3", { pl3 , {23.47, 21.31, 20.79 } });
+    scene.addPointLight("l4", { pl4 , {23.47, 21.31, 20.79 } });
+
+    return scene;
+}
+

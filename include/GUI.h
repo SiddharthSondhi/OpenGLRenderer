@@ -39,7 +39,7 @@ namespace GUI {
 
 		// scene
 		int currentSceneIndex{ 0 };
-		std::array<const char*, 10> scenes{
+		std::array<const char*, 11> scenes{
 			"Main",
 			"Planet",
 			"City",
@@ -49,7 +49,8 @@ namespace GUI {
 			"Shadows",
 			"NormalMap",
 			"HDR",
-			"Backrooms"
+			"Backrooms",
+			"PBR"
 		};
 
 		//directional light 
@@ -84,6 +85,7 @@ namespace GUI {
 
 		//SSAO
 		unsigned int SSAOTexture{ 0 };
+		unsigned int SSAOBlurTexture{ 0 };
 		float AORadius{ 0.5 };
 		float AOBias{ 0.025 };
 		float AOPower{ 4 };

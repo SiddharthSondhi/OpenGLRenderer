@@ -19,28 +19,28 @@ void PhongMaterial::bind(const Shader& shader) const{
 	// bind textures and set uniforms
 	glActiveTexture(GL_TEXTURE0 + DIFFUSE_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, diffuseTex);
-	shader.setInt("material.texture_diffuse", DIFFUSE_TEXTURE_UNIT);
+	shader.setInt("phongMat.texture_diffuse", DIFFUSE_TEXTURE_UNIT);
 
 	glActiveTexture(GL_TEXTURE0 + SPECULAR_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, specularTex);
-	shader.setInt("material.texture_specular", SPECULAR_TEXTURE_UNIT);
+	shader.setInt("phongMat.texture_specular", SPECULAR_TEXTURE_UNIT);
 
 	glActiveTexture(GL_TEXTURE0 + NORMAL_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, normalTex);
-	shader.setInt("material.texture_normal", NORMAL_TEXTURE_UNIT);
+	shader.setInt("phongMat.texture_normal", NORMAL_TEXTURE_UNIT);
 
 	glActiveTexture(GL_TEXTURE0 + EMISSION_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, emissionTex);
-	shader.setInt("material.texture_emission", EMISSION_TEXTURE_UNIT);
+	shader.setInt("phongMat.texture_emission", EMISSION_TEXTURE_UNIT);
 
-	shader.setVec3("material.diffuseColor", diffuseColor);
-	shader.setVec3("material.specularColor", specularColor);
-	shader.setVec3("material.emissionColor", emissionColor);
+	shader.setVec3("phongMat.diffuseColor", diffuseColor);
+	shader.setVec3("phongMat.specularColor", specularColor);
+	shader.setVec3("phongMat.emissionColor", emissionColor);
 
-	shader.setVec2("material.textureScale", textureScale);
-	shader.setBool("material.hasNormalMap", !(normalTex == 0));
-	shader.setBool("material.hasSpecularMap", !(specularTex == 0));
-	shader.setBool("material.hasEmissionMap", !(emissionTex == 0));
+	shader.setVec2("phongMat.textureScale", textureScale);
+	shader.setBool("phongMat.hasNormalMap", !(normalTex == 0));
+	shader.setBool("phongMat.hasSpecularMap", !(specularTex == 0));
+	shader.setBool("phongMat.hasEmissionMap", !(emissionTex == 0));
 }
 
 std::unique_ptr<Material> PhongMaterial::clone() const {

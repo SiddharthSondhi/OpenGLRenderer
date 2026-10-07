@@ -99,8 +99,9 @@ int main() {
     Scene normalMapScene{ buildNormalMapScene(resources) };
     Scene HDRScene{ buildHDRScene(resources) };
     Scene backroomsScene{ buildBackroomsScene(resources) };
+    Scene PBRScene{ buildPBRScene(resources) };
 
-    std::array<Scene*,  10> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene, &backroomsScene };
+    std::array<Scene*,  11> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene, &backroomsScene, &PBRScene};
 
     // ---------------------------------------Rendering Loop-------------------------------------------
     while (!glfwWindowShouldClose(window)) {

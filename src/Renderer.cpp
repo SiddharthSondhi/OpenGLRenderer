@@ -76,7 +76,17 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	
 	SSAOShader.setFloat("radius", gui.AORadius);
 	SSAOShader.setFloat("bias", gui.AOBias);
+	SSAOShader.setFloat("AOPower", gui.AOPower);
 
+	screenQuadMesh.drawGeometry();
+
+	//SSAO Blur Pass
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+
+	SSAOBlurShader.use();
 	screenQuadMesh.drawGeometry();
 
 	//lighting pass
@@ -93,17 +103,18 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, gEmission);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, gMisc);
 
 	glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, shadowMap);
 
 	glActiveTexture(GL_TEXTURE0 + SSAO_TEXTURE_UNIT);
-	glBindTexture(GL_TEXTURE_2D, SSAOColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, SSAOBlurColorBuffer);
 
 	resources.deferredPhongShader.use();
 
 	resources.deferredPhongShader.setMat4("viewToDirLightSpaceMat", dirLightSpaceMat * glm::inverse(camera.getViewMatrix()));
-	resources.deferredPhongShader.setFloat("AOPower", gui.AOPower);
 
 	screenQuadMesh.drawGeometry();
 
@@ -210,12 +221,13 @@ void Renderer::renderObjectForward(const SceneObject& obj, const Resources& reso
 		const Shader* shader{ nullptr };
 
 		// if basic material, then shader selected from material
-		if (matType == Material::Basic) 
+		if (matType == Material::Basic)
 			shader = static_cast<const BasicMaterial*>(material)->shader;
 		else if (matType == Material::Phong)
 			shader = &resources.phongShader;
 		else if (matType == Material::SolidColor)
 			shader = &resources.solidColorShader;
+		else return;
 
 		if (!shader) {
 			std::cout << "ERROR::NO SHADER SET\n";
@@ -241,15 +253,20 @@ void Renderer::renderObjectDeferred(const SceneObject& obj) const {
 
 	for (const Mesh& mesh : obj.getModel()->getMeshes()) {
 
-		//choose shader based on material
 		const Material* material{ getMaterial(obj, mesh)};
 		const Material::Type matType{ material->getType() };
 
 		// only draw to gBuffer if supported material type
-		if (!(matType == Material::Phong)) 
+		if (matType != Material::Phong && matType != Material::PBR ) 
 			continue;
 
 		gBufferShader.use();
+
+		//update material type in gBuffer 0 = phong, 1 = PBR
+		if (matType == Material::Phong)
+			gBufferShader.setFloat("matType", 0.0f);
+		else if (matType == Material::PBR)
+			gBufferShader.setFloat("matType", 1.0f);
 
 		//update model matrix
 		gBufferShader.setMat4("model", modelMat);
@@ -274,7 +291,7 @@ void Renderer::renderObjectDeferredForward(const SceneObject& obj, const Resourc
 		const Shader* shader{ nullptr };
 
 		// dont render if already rendered through deferred method
-		if (matType == Material::Phong)
+		if (matType == Material::Phong || matType == Material::PBR)
 			continue;
 		// if basic material, then shader selected from material
 		else if (matType == Material::Basic)
@@ -361,11 +378,8 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 		const PointLight& light{ pointLights[i] };
 
 		lightData.pointLights[i].position = view * glm::vec4{ light.obj.position, 1.0f };
-
 		lightData.pointLights[i].attenuation = glm::vec4{ light.constant, light.linear, light.quadratic, 1.0f };
-
-		lightData.pointLights[i].diffuse = glm::vec4{ light.diffuse, 1.0f };
-		lightData.pointLights[i].specular = glm::vec4{ light.specular, 1.0f };
+		lightData.pointLights[i].color = glm::vec4{ light.color, 1.0f };
 	}
 
 	//spot light
@@ -510,9 +524,17 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, gEmission, 0);
 
+	//misc buffer (metallic, roughness, AO, shading model)	
+	glGenTextures(1, &gMisc);
+	glBindTexture(GL_TEXTURE_2D, gMisc);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, gMisc, 0);
+
 	// tell OpenGL which color attachments we'll use for rendering 
-	unsigned int attachments[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-	glDrawBuffers(4, attachments);
+	unsigned int attachments[5] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
+	glDrawBuffers(5, attachments);
 
 	// create and attach depth buffer (renderbuffer)
 	unsigned int rboDepthStencil;
@@ -537,7 +559,7 @@ void Renderer::setUpSSAO(float windowWidth, float windowHeight) {
 	std::uniform_real_distribution<float> randomFloats{ 0.0f, 1.0f }; // generates random floats between [0, 1)
 	std::default_random_engine generator;
 	std::vector<glm::vec3> SSAOKernel;
-	constexpr int NUM_SAMPLES{ 64 };
+	constexpr int NUM_SAMPLES{ 32 };
 	for (int i{ 0 }; i < NUM_SAMPLES; i++) {
 		// this will generate vectors in a cube  {-1 to 1 x -1 to 1 x 0 to 1}
 		glm::vec3 sample{ randomFloats(generator) * 2.0f - 1.0f,
@@ -597,13 +619,31 @@ void Renderer::setUpSSAO(float windowWidth, float windowHeight) {
 	SSAOShader.setInt("gPosition", 0);
 	SSAOShader.setInt("gNormal", 1);
 	SSAOShader.setInt("noiseTexture", 2);
+	SSAOShader.setInt("numSamples", NUM_SAMPLES);
 
 	// Send kernel + rotation 
-	for (unsigned int i = 0; i < 64; ++i)
+	for (unsigned int i{ 0 }; i < NUM_SAMPLES; i++)
 		SSAOShader.setVec3("samples[" + std::to_string(i) + "]", SSAOKernel[i]);
+
+	//Blur 
+	glGenFramebuffers(1, &SSAOBlurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, SSAOBlurFBO);
+	glGenTextures(1, &SSAOBlurColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, SSAOBlurColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, windowWidth, windowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, SSAOBlurColorBuffer, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for SSAO blur is not complete!\n";
+
+	SSAOBlurShader.use();
+	SSAOBlurShader.setInt("ssaoInput", 0);
 
 	//gui
 	gui.SSAOTexture = SSAOColorBuffer;
+	gui.SSAOBlurTexture = SSAOBlurColorBuffer;
 }
 
 
@@ -622,6 +662,7 @@ void Renderer::init(float windowWidth, float windowHeight, const Resources& reso
 	resources.deferredPhongShader.setInt("gNormal", 1);
 	resources.deferredPhongShader.setInt("gAlbedoSpec", 2);
 	resources.deferredPhongShader.setInt("gEmission", 3);
+	resources.deferredPhongShader.setInt("gMisc", 4);
 	resources.deferredPhongShader.setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
 	resources.deferredPhongShader.setInt("SSAO", SSAO_TEXTURE_UNIT);
 }

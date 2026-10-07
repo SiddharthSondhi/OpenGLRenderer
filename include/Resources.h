@@ -9,6 +9,7 @@
 #include "SolidColorMaterial.h"
 #include "PhongMaterial.h"
 #include "BasicMaterial.h"
+#include "PBRMaterial.h"
 
 #include <array>
 
@@ -22,7 +23,7 @@ struct Resources {
     Shader refractiveShader{"./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl"};
     Shader explodeNormalsShader{"./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl"};
     Shader normalVisShader{"./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl"};
-    Shader deferredPhongShader{ "./shaders/postProcVS.glsl", "./shaders/deferredPhongFS.glsl" };
+    Shader deferredPhongShader{ "./shaders/postProcVS.glsl", "./shaders/deferredLightingFS.glsl" };
 
     //skyboxes
     std::array<unsigned int, 9> skyboxes{
@@ -47,6 +48,17 @@ struct Resources {
     unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.jpg", true) };
     unsigned int brickWallTex{ Utils::loadTextureFromFile("./resources/textures/brickwall.jpg", true) };
     unsigned int brickWallNormalMap{ Utils::loadTextureFromFile("./resources/textures/brickwall_normal.jpg") };
+    
+    unsigned int PBR1Albedo{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_basecolor.png", true) };
+    unsigned int PBR1Metallic{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_metallic.png") };
+    unsigned int PBR1Normal{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_normal.png") };
+    unsigned int PBR1roughness{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_roughness.png") };
+
+    unsigned int PBR2Albedo{ Utils::loadTextureFromFile("./resources/textures/wispy-grass-meadow/wispy-grass-meadow_albedo.png", true) };
+    unsigned int PBR2AO{ Utils::loadTextureFromFile("./resources/textures/wispy-grass-meadow/wispy-grass-meadow_ao.png") };
+    unsigned int PBR2Normal{ Utils::loadTextureFromFile("./resources/textures/wispy-grass-meadow/wispy-grass-meadow_normal-ogl.png") };
+    unsigned int PBR2Roughness{ Utils::loadTextureFromFile("./resources/textures/wispy-grass-meadow/wispy-grass-meadow_roughness.png") };
+    unsigned int PBR2Metallic{ Utils::loadTextureFromFile("./resources/textures/wispy-grass-meadow/wispy-grass-meadow_metallic.png") };
 
 
     // materials
@@ -61,11 +73,15 @@ struct Resources {
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };
     BasicMaterial depthMat{ depthShader };
+    PBRMaterial pbrMat{ {0.5, 0.0, 0.0}, .8, .35 };
+    PBRMaterial rustedIronMat{ PBR1Albedo, PBR1Metallic, PBR1roughness, 0, PBR1Normal };
+    PBRMaterial wispyGrass{ PBR2Albedo, PBR2Metallic, PBR2Roughness, PBR2AO, PBR2Normal };
 
     // meshes
     Mesh cubeMesh{ VertexData::cube, {3, 3, 2} };
     Mesh planeMesh{ VertexData::plane, {3, 3, 2}};
     Mesh tunnelMesh{ VertexData::insideOutCube, {3, 3, 2} };
+    Mesh sphereMesh{ VertexData::genSphereVertices(), {3, 3, 2, 3, 3}, 0, VertexData::genSphereIndices() };
 
 	// models
     Model planetModel{ "./resources/models/planet/planet.obj" };
@@ -79,4 +95,5 @@ struct Resources {
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj" };
     Model tunnelModel{ tunnelMesh, woodMat };
     Model backroomsModel{ "./resources/models/backrooms/backrooms_vr.glb", {true, true, false} };
+    Model sphereModel{ sphereMesh, rustedIronMat };
 };

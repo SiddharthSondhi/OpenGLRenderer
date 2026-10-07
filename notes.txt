@@ -30,3 +30,4 @@
 - gBufferVS.glsl/phongVS.glsl, reorthogonalize using gram schmidt process. Instead of using bitangent from assimp, figure out handedness first 
   (to see order of cross product) then calculate bitangent after gram schmidth using N and T
 - organize GUI, add light settings for ambient light, directional light (maybe make them tied to the scene)
+- understand spherical coordinates (e.g. how to generate sphere coordinates, uvs, normals) currently just pasted

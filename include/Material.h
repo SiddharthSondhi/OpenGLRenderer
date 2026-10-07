@@ -8,6 +8,7 @@ class Material {
 public:
 	enum Type {
 		Phong,
+		PBR,
 		Basic,
 		SolidColor
 	};

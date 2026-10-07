@@ -142,6 +142,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\BasicMaterial.cpp" />
+    <ClCompile Include="src\PBRMaterial.cpp" />
     <ClCompile Include="src\PhongMaterial.cpp" />
     <ClCompile Include="src\PointLight.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="include\Material.h" />
     <ClInclude Include="include\Mesh.h" />
     <ClInclude Include="include\Model.h" />
+    <ClInclude Include="include\PBRMaterial.h" />
     <ClInclude Include="include\PhongMaterial.h" />
     <ClInclude Include="include\PointLight.h" />
     <ClInclude Include="include\Renderer.h" />
@@ -198,7 +200,7 @@
     <ClInclude Include="src\VertexData.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\deferredPhongFS.glsl" />
+    <None Include="shaders\deferredLightingFS.glsl" />
     <None Include="shaders\depthDebugFS.glsl" />
     <None Include="shaders\depthDebugVS.glsl" />
     <None Include="shaders\gBufferFS.glsl" />
@@ -226,6 +228,8 @@
     <None Include="shaders\refractiveVS.glsl" />
     <None Include="shaders\skyboxFS.glsl" />
     <None Include="shaders\skyboxVS.glsl" />
+    <None Include="shaders\SSAOBlurFS.glsl" />
+    <None Include="shaders\SSAOBlurVS.glsl" />
     <None Include="shaders\SSAOFS.glsl" />
     <None Include="shaders\SSAOVS.glsl" />
   </ItemGroup>

@@ -13,3 +13,4 @@ Scene buildShadowScene(Resources& r);
 Scene buildNormalMapScene(Resources& r);
 Scene buildHDRScene(Resources& r);
 Scene buildBackroomsScene(Resources& r);
+Scene buildPBRScene(Resources& r);

@@ -20,8 +20,7 @@ namespace GPUData {
 		//constant, linear, quadratic, unused
 		glm::vec4 attenuation{ 1.0f, 0.09f, 0.032f, 0.0f };
 
-		glm::vec4 diffuse{ 0.0f };
-		glm::vec4 specular{ 0.0f };
+		glm::vec4 color{ 0.0f };
 	};
 
 	struct SpotLightData {

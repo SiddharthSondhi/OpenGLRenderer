@@ -7,8 +7,8 @@
 class PointLight {
 public:
 	SceneObject obj;
-	glm::vec3 diffuse{ Colors::white };
-	glm::vec3 specular{ Colors::white };
+	glm::vec3 color{ Colors::white };
+
 
 	// attenuation
 	float constant{ 1.0f };

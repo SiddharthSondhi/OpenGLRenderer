@@ -7,16 +7,18 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D noiseTexture;
 
-const int NUM_SAMPLES = 64;
-uniform vec3 samples[NUM_SAMPLES];
+const int MAX_NUM_SAMPLES = 64;
+uniform vec3 samples[MAX_NUM_SAMPLES];
 
 layout(std140, binding = 0) uniform Matrices{
 	mat4 view;
 	mat4 projection;
 };
 
-uniform float radius = 0.5;
-uniform float bias = .025;
+uniform int numSamples;
+uniform float radius;
+uniform float bias;
+uniform float AOPower;
 
 const vec2 noiseScale = textureSize(gPosition, 0) / textureSize(noiseTexture, 0);
 
@@ -31,7 +33,7 @@ void main(){
 	mat3 TBN = mat3(tangent, bitangent, normal); 
 
 	occlusion = 0.0;
-	for (int i = 0; i < NUM_SAMPLES; i++){
+	for (int i = 0; i < numSamples; i++){
 		// transform sample from tangent space to view space using TBN
 		vec3 samplePos = TBN * samples[i];
 		samplePos = fragPos + samplePos * radius;
@@ -50,5 +52,6 @@ void main(){
 		occlusion += (samplePos.z + bias <= fragmentDepth ? 1.0 : 0.0) * rangeCheck;  
 	} 
 
-	occlusion = 1.0 - (occlusion / NUM_SAMPLES);
+	occlusion = 1.0 - (occlusion / numSamples);
+	occlusion = pow(occlusion, AOPower);
 }

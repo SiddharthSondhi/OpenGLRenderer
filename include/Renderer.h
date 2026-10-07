@@ -52,7 +52,7 @@ private:
 	unsigned int shadowMap;
 	static constexpr unsigned int SHADOW_WIDTH = 4096;
 	static constexpr unsigned int SHADOW_HEIGHT = 4096;
-	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 4;
+	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 5;
 	glm::mat4 dirLightSpaceMat;
 
 	// forward rendering
@@ -66,6 +66,7 @@ private:
 	unsigned int gNormal;
 	unsigned int gAlbedoSpec;
 	unsigned int gEmission;
+	unsigned int gMisc;
 	void renderDeferred(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources);
 	void renderObjectDeferred(const SceneObject& obj) const;
 	void renderObjectDeferredForward(const SceneObject& obj, const Resources& resources) const;
@@ -79,7 +80,10 @@ private:
 	unsigned int SSAOFBO;
 	unsigned int SSAONoiseTexture;
 	unsigned int SSAOColorBuffer;
-	static constexpr unsigned int SSAO_TEXTURE_UNIT = 5;
+	unsigned int SSAOBlurFBO;
+	unsigned int SSAOBlurColorBuffer;
+	static constexpr unsigned int SSAO_TEXTURE_UNIT = 6;
 	void setUpSSAO(float windowWidth, float windowHeight);
 	Shader SSAOShader{ "./shaders/SSAOVS.glsl", "./shaders/SSAOFS.glsl" };
+	Shader SSAOBlurShader{ "./shaders/SSAOBlurVS.glsl", "./shaders/SSAOBlurFS.glsl" };
 };

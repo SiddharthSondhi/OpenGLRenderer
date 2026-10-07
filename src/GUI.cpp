@@ -92,6 +92,9 @@ namespace GUI {
 		if (ImGui::CollapsingHeader("SSAO")) {
 			ImGui::Text("SSAO");
 			ImGui::Image(static_cast<ImTextureID>(gui.SSAOTexture), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
+
+			ImGui::Text("SSAO Blurred");
+			ImGui::Image(static_cast<ImTextureID>(gui.SSAOBlurTexture), ImVec2(DEBUG_WIDTH, DEBUG_HEIGHT), ImVec2(0, 1), ImVec2(1, 0));
 		}
 		
 		ImGui::End();

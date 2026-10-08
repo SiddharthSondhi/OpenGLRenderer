@@ -10,8 +10,7 @@ namespace GPUData {
 
 	struct DirLightData {
 		glm::vec4 direction;
-		glm::vec4 diffuse{ Colors::white * .7f , 1.0f };
-		glm::vec4 specular{ Colors::white, 1.0f };
+		glm::vec4 color{ 0.0f };
 	};
 
 	struct PointLightData {
@@ -29,12 +28,10 @@ namespace GPUData {
 
 		// innerCutOff, outerCutOff, unused, unused
 		glm::vec4 cutOffs{ glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(17.5f)), 0.0f, 0.0f };
-
 		//constant, linear, quadratic, unused
 		glm::vec4 attenuation{ 1.0f, 0.022f, 0.0019f, 0.0f };
 
-		glm::vec4 diffuse{ Colors::white * .5f , 1.0f };
-		glm::vec4 specular{ Colors::white , 1.0f };
+		glm::vec4 color{ Colors::white * .5f , 0.0f };
 	};
 
 

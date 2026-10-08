@@ -286,7 +286,7 @@ Scene buildPBRScene(Resources& r) {
     Scene scene;
     scene.setUpdateFunc(updatePBRScene);
 
-    //scene.dirLight = { Colors::white };
+    //scene.dirLight = { Colors::white * 10.0f };
     for (int i{ 0 }; i < 8; i++) {
         for (int j{ 0 }; j < 8; j++) {
             PBRMaterial mat{ {0.5f, 0.0f, 0.0f}, glm::clamp( j / 7.0f, 0.05f, 1.0f), glm::clamp(i / 7.0f, 0.05f, 1.0f) };
@@ -313,10 +313,12 @@ Scene buildPBRScene(Resources& r) {
     SceneObject pl4{ &r.lightModel,  {8.0f, 8.0f, 20.0f} };
     pl4.scale = glm::vec3{ 0.2f };
 
-    scene.addPointLight("l1", { pl1 , {23.47, 21.31, 20.79 } });
-    scene.addPointLight("l2", { pl2 , {23.47, 21.31, 20.79 } });
-    scene.addPointLight("l3", { pl3 , {23.47, 21.31, 20.79 } });
-    scene.addPointLight("l4", { pl4 , {23.47, 21.31, 20.79 } });
+    glm::vec3 lightColor{ 23.47, 21.31, 20.79 };
+    lightColor = Colors::black;
+    scene.addPointLight("l1", { pl1 , lightColor });
+    scene.addPointLight("l2", { pl2 , lightColor });
+    scene.addPointLight("l3", { pl3 , lightColor });
+    scene.addPointLight("l4", { pl4 , lightColor });
 
     return scene;
 }

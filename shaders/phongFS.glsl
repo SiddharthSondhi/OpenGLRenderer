@@ -31,8 +31,7 @@ struct PhongMaterial{
 // Create all light data structs using vec4 so that std140 UBO easy to use
 struct DirLight{
     vec4 direction;
-    vec4 diffuse;
-    vec4 specular;
+    vec4 color;
 };
 
 struct PointLight{
@@ -138,8 +137,8 @@ vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec4 texDiff, vec4 
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 
 	//combine results
-    vec3 diffuse  = vec3(light.diffuse)  * diff * vec3(texDiff);
-    vec3 specular = vec3(light.specular) * spec * vec3(texSpec);
+    vec3 diffuse  = vec3(light.color)  * diff * vec3(texDiff);
+    vec3 specular = vec3(light.color) * spec * vec3(texSpec);
 
 	float shadow = calcDirLightShadow(normal, lightDir);
 	return ((1.0 - shadow) * (diffuse + specular));

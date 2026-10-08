@@ -369,8 +369,7 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 
 	//directional light
 	lightData.dirLight.direction = glm::normalize(view * glm::vec4{ scene.dirLight.direction, 0.0f });
-	lightData.dirLight.diffuse = glm::vec4{ scene.dirLight.diffuse, 1.0f };
-	lightData.dirLight.specular = glm::vec4{ scene.dirLight.specular, 1.0f };
+	lightData.dirLight.color = glm::vec4{ scene.dirLight.color, 0.0f };
 
 	// point lights
 	const std::vector<PointLight>& pointLights{ scene.getPointLights() };
@@ -379,7 +378,7 @@ void Renderer::updateLightData(const Scene& scene, bool enableFlashLight) {
 
 		lightData.pointLights[i].position = view * glm::vec4{ light.obj.position, 1.0f };
 		lightData.pointLights[i].attenuation = glm::vec4{ light.constant, light.linear, light.quadratic, 1.0f };
-		lightData.pointLights[i].color = glm::vec4{ light.color, 1.0f };
+		lightData.pointLights[i].color = glm::vec4{ light.color, 0.0f };
 	}
 
 	//spot light

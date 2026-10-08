@@ -7,8 +7,7 @@ out vec4 fragColor;
 // Create all light data structs using vec4 so that std140 UBO easy to use
 struct DirLight{
     vec4 direction;
-    vec4 diffuse;
-    vec4 specular;
+    vec4 color;
 };
 
 struct PointLight{
@@ -24,8 +23,7 @@ struct SpotLight{
 	vec4 cutOffs;     // innerCutOff, outerCutOff
 	vec4 attenuation; //constant, linear, quadratic
 
-	vec4 diffuse;
-	vec4 specular;
+	vec4 color;
 };
 
 #define MAX_NUMBER_POINT_LIGHTS 128
@@ -50,19 +48,23 @@ uniform mat4 viewToDirLightSpaceMat;
 vec3 calcPhongDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 texSpec); 
 vec3 calcPhongPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 texSpec);  
 vec3 calcPhongSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 texSpec);  
-float calcDirLightShadow(vec3 fragPos, vec3 normal, vec3 lightDirection);
 vec3 calcBlinnFong(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 texSpec, vec3 texEmission, float SSAOSample);
 
 //PBR
 vec3 fresnelSchlick(vec3 halfway, vec3 viewDir, vec3 F0);
 vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, float AOPBRMat);
 vec3 calcPBRPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
+vec3 calcPBRDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
+vec3 calcPBRSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
+vec3 calcPBRLight(vec3 radiance, vec3 lightDir, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
 float NDF(vec3 normal, vec3 halfway, float roughness);
 float Geometry(vec3 normal, vec3 viewDir, vec3 lightDir, float roughness);
 float GeometrySchlickGGX(float dotProduct, float roughness);
 
 //other
+float calcDirLightShadow(vec3 fragPos, vec3 normal, vec3 lightDirection);
 float calcAttenuation(vec3 lightPos, vec3 fragPos, float constant, float linear, float quadratic);
+float calcSpotLightIntensity(SpotLight light, vec3 fragToLightDir, vec3 spotLightDir);
 
 // global vars
 float shininess = 256.0;
@@ -111,10 +113,17 @@ vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metalli
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo, metallic);
 
+	//directional light
+	result += calcPBRDirLight(dirLight, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
+
 	// point Lights
 	for(int i = 0; i < enableFlashLightNumPtLights.y; i++){
 		result += calcPBRPointLight(pointLights[i], fragPos, normal, viewDir, albedo, metallic, roughness, F0);
 	}
+
+	//spot light
+	if (enableFlashLightNumPtLights.x > 0)
+		result += calcPBRSpotLight(spotLight, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
 
 	vec3 ambient = vec3(0.03) * albedo * AOPBRMat;
     result += ambient;  
@@ -122,32 +131,73 @@ vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metalli
 	return result;
 }
 
+vec3 calcPBRLight(vec3 radiance, vec3 lightDir, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
+	// skip if the light has no color
+	if (radiance == vec3(0.0)){
+		return vec3(0.0);
+	}
 
-vec3 calcPBRPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
-	vec3 lightDir = normalize(vec3(light.position) - fragPos);
 	vec3 halfway = normalize(viewDir + lightDir);
 
-    float attenuation = calcAttenuation(vec3(light.position), fragPos, light.attenuation.x, light.attenuation.y, light.attenuation.z);
-	vec3 radiance = vec3(light.color) * attenuation;
-
-	//Cook Torrance BRDF
+	//Cook Torrance BRDF - BRDF scales the radiance (or incoming light ray) based on the material properties (roughness / metallic) 
+	//and angle that light is hitting surface. Has diffuse and specular part. Specular part contains D (normal distribution function), 
+	//G (Geometry function), and F(fresnell function). Specular represents reflected light energy.
 	float D = NDF(normal, halfway, roughness);
 	float G = Geometry(normal, viewDir, lightDir, roughness);
 	vec3 F = fresnelSchlick(halfway, viewDir, F0);
 
 	vec3 numerator = D * F * G;
-	// add 0.0001 to prevent divide by 0
+	// add 0.0001 to prevent divide by 0 (not sure where all these denominator terms come from)
 	float denominator = 4.0  * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0) + 0.0001;
 	vec3 specular = numerator / denominator;
 
+	//Diffuse part of Cook Torrance BRDF. Represents refracted light energy. Since Fresnel function gives the specular part, 
+	//leftover energy is diffuse. 
 	vec3 kD = vec3(1.0) - F;
+
+	// Metallic surfaces don't refract light (so shouldn't have a diffuse part). Therefore scale down diffuse based on metallic componenent. 
+	// Metallic of 1.0 - no diffuse, metallic 0.0 - full diffuse.
 	kD *= 1.0 - metallic;
-	vec3 result = (kD * albedo / PI + specular) * radiance * max(dot(normal, lightDir), 0.0);
+	vec3 diffuse = kD * albedo / PI;
+
+	vec3 result = (diffuse + specular) * radiance * max(dot(normal, lightDir), 0.0);
 
 	return result;
 }
 
-// approximation of fresnel equation (Fresnel-Schlick approximation). 
+
+vec3 calcPBRPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
+	vec3 lightDir = normalize(vec3(light.position) - fragPos);
+
+	// for point lights apply attentuation
+    float attenuation = calcAttenuation(vec3(light.position), fragPos, light.attenuation.x, light.attenuation.y, light.attenuation.z);
+	vec3 radiance = vec3(light.color) * attenuation;
+
+	return calcPBRLight(radiance, lightDir, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
+}
+
+vec3 calcPBRDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
+	// for directional lights no attentuation
+	vec3 radiance = vec3(light.color);
+	return calcPBRLight(radiance, -vec3(light.direction), fragPos, normal, viewDir, albedo, metallic, roughness, F0);
+}
+
+vec3 calcPBRSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
+	vec3 spotLightDir = normalize(-vec3(light.direction));
+	vec3 fragToLightDir = normalize(vec3(light.position) - fragPos);	
+
+	// for spot light apply attenuation + intensity (value scaled on the direction of the spot light)
+	float attenuation = calcAttenuation(vec3(light.position), fragPos, light.attenuation.x, light.attenuation.y, light.attenuation.z);
+	float intensity = calcSpotLightIntensity(light, fragToLightDir, spotLightDir);
+
+	// multiplying by 15 to make light more intense overall since setting the base color this high will make Phong too bright for such lights.
+	vec3 radiance = vec3(light.color) * attenuation * intensity * 15;
+	return calcPBRLight(radiance, fragToLightDir, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
+}
+
+
+
+// approximation of fresnel equation. Determines how much of the light is reflected vs. refracted based on material properties and viewing angle.
 vec3 fresnelSchlick(vec3 halfway, vec3 viewDir, vec3 F0){
 	float cosTheta = clamp(dot(halfway, viewDir), 0.0, 1.0);
 	return F0 + (1.0 - F0) * pow(1 - cosTheta , 5.0);
@@ -211,8 +261,8 @@ vec3 calcPhongDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, 
 	float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
 
 	//combine results
-    vec3 diffuse  = vec3(light.diffuse)  * diff * texDiff;
-    vec3 specular = vec3(light.specular) * spec * texSpec;
+    vec3 diffuse  = vec3(light.color) * diff * texDiff;
+    vec3 specular = vec3(light.color) * spec * texSpec;
 
 	float shadow = calcDirLightShadow(fragPos, normal, lightDir);
 	return ((1.0 - shadow) * (diffuse + specular));
@@ -259,16 +309,17 @@ vec3 calcPhongSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir
 	float attenuation = calcAttenuation(vec3(light.position), fragPos, light.attenuation.x, light.attenuation.y, light.attenuation.z);
 
 	//spotlight intentsity calculation
-	float theta = dot(fragToLightDir, normalize(spotLightDir));
-    float epsilon = light.cutOffs.x - light.cutOffs.y;
-    float intensity = clamp((theta - light.cutOffs.y) / epsilon, 0.0, 1.0);
+    float intensity = calcSpotLightIntensity(light, fragToLightDir, spotLightDir);
 
 	//combine results
-	vec3 diffuse  = vec3(light.diffuse)  * diff * texDiff;
-    vec3 specular = vec3(light.specular) * spec * texSpec;
+	vec3 diffuse  = vec3(light.color) * diff * texDiff;
+    vec3 specular = vec3(light.color) * spec * texSpec;
 
 	return attenuation * intensity * (diffuse + specular);
 }
+
+
+// ----------------------------------------------------- Other  ------------------------------------------------------------------------
 
 float calcDirLightShadow(vec3 fragPos, vec3 normal, vec3 lightDirection){
 	//since frag pos in Light Space not passed through gl_Position, have to do perspective divide to transform it into NDC. 
@@ -313,4 +364,11 @@ float calcDirLightShadow(vec3 fragPos, vec3 normal, vec3 lightDirection){
 float calcAttenuation(vec3 lightPos, vec3 fragPos, float constant, float linear, float quadratic){
 	float dist = length(lightPos - fragPos);
 	return 1.0 / (constant + linear * dist + quadratic * (dist * dist));
+}
+
+float calcSpotLightIntensity(SpotLight light, vec3 fragToLightDir, vec3 spotLightDir){
+	float theta = dot(fragToLightDir, normalize(spotLightDir));
+    float epsilon = light.cutOffs.x - light.cutOffs.y;
+
+	return clamp((theta - light.cutOffs.y) / epsilon, 0.0, 1.0);
 }

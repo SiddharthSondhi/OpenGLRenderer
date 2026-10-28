@@ -18,7 +18,7 @@ public:
 	void init(float windowWidth, float windowHeight, const Resources& resources);
 
 	void updateLightData(const Scene& scene, bool enableFlashLight);
-	void updateMatrices(float windowWidth, float windowHeight) const;	
+	void updateMatrices(float windowWidth, float windowHeight) const;
 
 private:
 	// UBOs
@@ -52,7 +52,7 @@ private:
 	unsigned int shadowMap;
 	static constexpr unsigned int SHADOW_WIDTH = 4096;
 	static constexpr unsigned int SHADOW_HEIGHT = 4096;
-	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT = 5;
+
 	glm::mat4 dirLightSpaceMat;
 
 	// forward rendering
@@ -70,8 +70,17 @@ private:
 	void renderDeferred(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources);
 	void renderObjectDeferred(const SceneObject& obj) const;
 	void renderObjectDeferredForward(const SceneObject& obj, const Resources& resources) const;
-	void setUpGBuffer(float windowWidth, float windowHeight);
-	Shader gBufferShader{"./shaders/gBufferVS.glsl", "./shaders/gBufferFS.glsl" };
+	void setUpGBuffer(float windowWidth, float windowHeight, const Resources& resources);
+	Shader gBufferShader{ "./shaders/gBufferVS.glsl", "./shaders/gBufferFS.glsl" };
+
+	//deferred shader texture units
+	static constexpr unsigned int G_POSITION_TEXTURE_UNIT	{ 0 };
+	static constexpr unsigned int G_NORMAL_TEXTURE_UNIT		{ 1 };
+	static constexpr unsigned int G_ALBEDO_SPEC_TEXTURE_UNIT{ 2 };
+	static constexpr unsigned int G_EMISSION_TEXTURE_UNIT	{ 3 };
+	static constexpr unsigned int G_MISC_TEXTURE_UNIT		{ 4 };
+	static constexpr unsigned int SHADOW_MAP_TEXTURE_UNIT	{ 5 };
+	static constexpr unsigned int SSAO_TEXTURE_UNIT			{ 6 };
 
 	// rendering helper
 	const Material* getMaterial(const SceneObject& obj, const Mesh& mesh) const;
@@ -82,7 +91,7 @@ private:
 	unsigned int SSAOColorBuffer;
 	unsigned int SSAOBlurFBO;
 	unsigned int SSAOBlurColorBuffer;
-	static constexpr unsigned int SSAO_TEXTURE_UNIT = 6;
+
 	void setUpSSAO(float windowWidth, float windowHeight);
 	Shader SSAOShader{ "./shaders/SSAOVS.glsl", "./shaders/SSAOFS.glsl" };
 	Shader SSAOBlurShader{ "./shaders/SSAOBlurVS.glsl", "./shaders/SSAOBlurFS.glsl" };

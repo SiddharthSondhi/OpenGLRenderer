@@ -31,7 +31,7 @@ namespace GPUData {
 		//constant, linear, quadratic, unused
 		glm::vec4 attenuation{ 1.0f, 0.022f, 0.0019f, 0.0f };
 
-		glm::vec4 color{ Colors::white * .5f , 0.0f };
+		glm::vec4 color{ Colors::white * 10.0f , 0.0f };
 	};
 
 

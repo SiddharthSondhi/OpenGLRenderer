@@ -12,7 +12,6 @@ Camera::Camera(glm::vec3 position, glm::vec3 worldUp, float yaw, float pitch) :
 }
 
 void Camera::updateCameraVectors() {
-
     // calculate the new Front vector
     glm::vec3 front;
     front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));

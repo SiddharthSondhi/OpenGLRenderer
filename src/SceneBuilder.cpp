@@ -177,6 +177,24 @@ Scene buildShadowScene(Resources& r) {
     //SceneObject light{ &r.lightMesh, {-4, 7, 1}, glm::vec3{0.2f} };
     ////scene.addPointLight("light1", PointLight{ light, Colors::white }, &r.solidColorShader);
 
+    //scene.dirLight = { Colors::white * 10.0f };
+    for (int i{ 0 }; i < 8; i++) {
+        for (int j{ 0 }; j < 8; j++) {
+            PBRMaterial mat{ {0.5f, 0.0f, 0.0f}, glm::clamp(j / 7.0f, 0.05f, 1.0f), glm::clamp(i / 7.0f, 0.05f, 1.0f) };
+            SceneObject sphere{ &r.sphereModel, mat };
+            sphere.position = { i - 8, j + 1, 10 };
+            sphere.scale = glm::vec3{ .4 };
+            scene.addObject("sphere" + std::to_string(i), sphere);
+        }
+    }
+
+    SceneObject s1{ &r.sphereModel, {-12.0f, 0.0f, 0.0f} };
+    scene.addObject("s1", s1);
+
+    SceneObject s2{ &r.sphereModel, r.wispyGrass };
+    s2.position = { -15.0f, 0.0f, 0.0f };
+    scene.addObject("s2", s2);
+
     SceneObject plane{ &r.planeModel };
     plane.scale = glm::vec3{ 10.0f, 1.0f, 10.0f };
     plane.setMaterialOverride(r.woodMat);
@@ -314,7 +332,7 @@ Scene buildPBRScene(Resources& r) {
     pl4.scale = glm::vec3{ 0.2f };
 
     glm::vec3 lightColor{ 23.47, 21.31, 20.79 };
-    lightColor = Colors::black;
+    //lightColor = Colors::black;
     scene.addPointLight("l1", { pl1 , lightColor });
     scene.addPointLight("l2", { pl2 , lightColor });
     scene.addPointLight("l3", { pl3 , lightColor });

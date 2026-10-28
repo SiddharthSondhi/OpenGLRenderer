@@ -11,7 +11,8 @@
 
 void Renderer::render(float windowWidth, float windowHeight, const Scene& scene, const Resources& resources) {
 	//shadow pass
-	shadowPass(scene, resources);
+	if (gui.directionalShadowsEnabled)
+		shadowPass(scene, resources);
 
 	//main pass
 	if (gui.currentRenderPath == 0)
@@ -20,7 +21,7 @@ void Renderer::render(float windowWidth, float windowHeight, const Scene& scene,
 		renderDeferred(windowWidth, windowHeight, scene, resources);
 
 	//render skybox last
-	renderSkyBox(resources.skyboxes[gui.skyboxIndex]);
+	renderSkyBox(resources.skyboxes[gui.currentSkyboxIndex]);
 
 	renderPostProcessing();
 }
@@ -52,6 +53,7 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	glViewport(0, 0, windowWidth, windowHeight);
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 	glCullFace(GL_BACK);
 	glDisable(GL_BLEND);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -95,26 +97,24 @@ void Renderer::renderDeferred(float windowWidth, float windowHeight, const Scene
 	glDisable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0 + G_POSITION_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, gPosition);
-	glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE0 + G_NORMAL_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, gNormal);
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE0 + G_ALBEDO_SPEC_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE0 + G_EMISSION_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, gEmission);
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE0 + G_MISC_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, gMisc);
-
 	glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, shadowMap);
-
 	glActiveTexture(GL_TEXTURE0 + SSAO_TEXTURE_UNIT);
 	glBindTexture(GL_TEXTURE_2D, SSAOBlurColorBuffer);
 
 	resources.deferredPhongShader.use();
-
 	resources.deferredPhongShader.setMat4("viewToDirLightSpaceMat", dirLightSpaceMat * glm::inverse(camera.getViewMatrix()));
+	resources.deferredPhongShader.setBool("directionalShadowsEnabled", gui.directionalShadowsEnabled);
 
 	screenQuadMesh.drawGeometry();
 
@@ -476,7 +476,7 @@ void Renderer::setUpShadowMap() {
 	gui.shadowMap = shadowMap;
 }
 
-void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
+void Renderer::setUpGBuffer(float windowWidth, float windowHeight, const Resources& resources) {
 	glGenFramebuffers(1, &gBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
@@ -545,6 +545,16 @@ void Renderer::setUpGBuffer(float windowWidth, float windowHeight) {
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer for gBuffer is not complete!\n";
+
+	// set initial uniforms
+	resources.deferredPhongShader.use();
+	resources.deferredPhongShader.setInt("gPosition", G_POSITION_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("gNormal", G_NORMAL_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("gAlbedoSpec", G_ALBEDO_SPEC_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("gEmission", G_EMISSION_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("gMisc", G_MISC_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
+	resources.deferredPhongShader.setInt("SSAO", SSAO_TEXTURE_UNIT);
 
 	//gui setup
 	gui.gPosition = gPosition;
@@ -651,17 +661,6 @@ void Renderer::init(float windowWidth, float windowHeight, const Resources& reso
 	createLightDataUBO();
 	createMatricesUBO();
 	setUpShadowMap();
-	setUpGBuffer(windowWidth, windowHeight);
+	setUpGBuffer(windowWidth, windowHeight, resources);
 	setUpSSAO(windowWidth, windowHeight);
-
-	// set initial uniforms
-	resources.deferredPhongShader.use();
-
-	resources.deferredPhongShader.setInt("gPosition", 0);
-	resources.deferredPhongShader.setInt("gNormal", 1);
-	resources.deferredPhongShader.setInt("gAlbedoSpec", 2);
-	resources.deferredPhongShader.setInt("gEmission", 3);
-	resources.deferredPhongShader.setInt("gMisc", 4);
-	resources.deferredPhongShader.setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
-	resources.deferredPhongShader.setInt("SSAO", SSAO_TEXTURE_UNIT);
 }

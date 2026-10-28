@@ -21,6 +21,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+
 //global variables
 int windowWidth;
 int windowHeight;
@@ -88,7 +89,7 @@ int main() {
     Resources resources;
     renderer.init(windowWidth, windowHeight, resources);
 
-    //Create Scenes
+    //Initialize Scenes
     Scene mainScene{ buildMainScene(resources) };
     Scene planetScene{ buildPlanetScene(resources) };
     Scene cityScene{ buildCityScene(resources) };
@@ -101,7 +102,10 @@ int main() {
     Scene backroomsScene{ buildBackroomsScene(resources) };
     Scene PBRScene{ buildPBRScene(resources) };
 
-    std::array<Scene*,  11> scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene, &backroomsScene, &PBRScene};
+    std::array scenes{ &mainScene, &planetScene, &cityScene, &countryScene, &refScene, &lightScene, &shadowScene, &normalMapScene, &HDRScene, &backroomsScene, &PBRScene};
+    int currentSceneIndex{ gui.currentSceneIndex };
+    Scene* currentScene{ scenes[currentSceneIndex] };
+    GUI::syncGui(*currentScene);
 
     // ---------------------------------------Rendering Loop-------------------------------------------
     while (!glfwWindowShouldClose(window)) {
@@ -114,10 +118,17 @@ int main() {
         glfwPollEvents();
         processInput(window);
 
-        //update scene
-        Scene* currentScene{ scenes[gui.currentSceneIndex] };
-        gui.dirLightDirection = &currentScene->dirLight.direction;
+        //check if the selected scene has changed
+        if (gui.currentSceneIndex != currentSceneIndex) {
+            currentSceneIndex = gui.currentSceneIndex;
+            currentScene = scenes[currentSceneIndex];
+            GUI::syncGui(*currentScene);
+        }
+        
+        // update and upload view and projection matrices
         renderer.updateMatrices(windowWidth, windowHeight);
+
+        // call the scene's update function which updates any objects within the scene
         currentScene->update(deltaTime);
         
         //update light data
@@ -207,5 +218,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetInputMode(window, GLFW_CURSOR, mouseGUIEnabled ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
     }
 }
+
 
 

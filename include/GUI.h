@@ -7,39 +7,16 @@
 
 #include <array>
 
-
 namespace GUI {
-	struct Settings {
-		// post processing 
-		std::array<const char*, 7> postProcessingModes { 
-			"Regular", 
-			"Inverse", "Grey Scale", 
-			"Weighted Grey Scale", 
-			"Sharpen", 
-			"Emboss", 
-			"Test" 
+	struct Options {
+		//render path
+		static constexpr std::array renderPaths{
+			"forward",
+			"deferred"
 		};
-		int postProcessingMode{ 0 };
-		float convMatrixOffset{ 500.0f };
-
-		//skybox 
-		std::array<const char*, 9> skyboxOptions{ 
-			"None",
-			"Sky High Fluffy Cloud",
-			"Planetary Earth",
-			"Casual Day",
-			"Day In The Clouds",
-			"Dark Storm",
-			"Space1",
-			"Space2",
-			"Space3"
-		};
-
-		int skyboxIndex{ 3 };
 
 		// scene
-		int currentSceneIndex{ 0 };
-		std::array<const char*, 11> scenes{
+		static constexpr std::array scenes{
 			"Main",
 			"Planet",
 			"City",
@@ -53,27 +30,63 @@ namespace GUI {
 			"PBR"
 		};
 
-		//directional light 
-		glm::vec3* dirLightDirection{ nullptr };
+		//skybox 
+		static constexpr std::array skyboxOptions{
+			"None",
+			"Sky High Fluffy Cloud",
+			"Planetary Earth",
+			"Casual Day",
+			"Day In The Clouds",
+			"Dark Storm",
+			"Space1",
+			"Space2",
+			"Space3"
+		};
 
-		//tone mapping
-		int currentToneMapping{ 0 };
-		std::array<const char*, 3> toneMappingModes{
+		// post processing filters
+		static constexpr std::array postProcessingModes{
+			"Regular",
+			"Inverse", "Grey Scale",
+			"Weighted Grey Scale",
+			"Sharpen",
+			"Emboss",
+			"Test"
+		};
+		
+		// tone mapping 
+		static constexpr std::array toneMappingModes{
 			"Off",
 			"Rienhard",
 			"Exposure"
 		};
+	};
 
-		float exposure{ 1.0f };
-
-		//render path
-		std::array<const char*, 2> renderPaths {
-			"forward",
-			"deferred"
-		};
-
+	struct Settings {
+		// -----------------MAIN SETTINGS-----------------
+		// render path
 		int currentRenderPath{ 1 };
 
+		//scene
+		int currentSceneIndex{ 0 };
+
+		//skybox
+		int currentSkyboxIndex{ 3 };
+
+		//directional light 
+		float dirLightYaw{ 0.0f };
+		float dirLightPitch{ -30.0f };
+		glm::vec3* dirLightDirection{ nullptr };
+		bool directionalShadowsEnabled{ true };
+
+		//post processing filters
+		int postProcessingMode{ 0 };
+		float convMatrixOffset{ 500.0f };
+
+		//tone mapping
+		int currentToneMapping{ 0 };
+		float exposure{ 1.0f };
+
+		// -----------------RENDER DEBUG-----------------
 		//shadows
 		unsigned int shadowMap{ 0 };
 
@@ -95,7 +108,5 @@ namespace GUI {
 	void define();
 	void render();
 	void shutDown();
-
-	void settingsUI();
-	void renderDebugUI();
+	void syncGui(Scene& scene);
 }

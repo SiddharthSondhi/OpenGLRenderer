@@ -43,6 +43,7 @@ uniform sampler2D shadowMap;
 uniform sampler2D SSAO;
 
 uniform mat4 viewToDirLightSpaceMat;
+uniform bool directionalShadowsEnabled;
 
 //Blinn Phong
 vec3 calcPhongDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 texSpec); 
@@ -52,7 +53,7 @@ vec3 calcBlinnFong(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 texDiff, vec3 t
 
 //PBR
 vec3 fresnelSchlick(vec3 halfway, vec3 viewDir, vec3 F0);
-vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, float AOPBRMat);
+vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, float AOPBRMat, float SSAOSample);
 vec3 calcPBRPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
 vec3 calcPBRDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
 vec3 calcPBRSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0);
@@ -96,7 +97,7 @@ void main(){
 		result = calcBlinnFong(fragPos, normal, viewDir, texDiff, texSpec, texEmission, SSAOSample);
 	}
 	else if (matType == 1){
-		result = calcPBR(fragPos, normal, viewDir, texDiff, metallic, roughness, AOPBRMat);
+		result = calcPBR(fragPos, normal, viewDir, texDiff, metallic, roughness, AOPBRMat, SSAOSample);
 	}
 
 	fragColor = vec4(result, 1.0);
@@ -104,7 +105,7 @@ void main(){
 
 // -------------------------------------------------------- PBR ----------------------------------------------------------------------------
 
-vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, float AOPBRMat){
+vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, float AOPBRMat, float SSAOSample){
 	vec3 result = vec3(0.0);
 
 	// F0 is a physical property of the material that describes how reflective it is when directly looking at it or at normal incidence. 
@@ -125,7 +126,7 @@ vec3 calcPBR(vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metalli
 	if (enableFlashLightNumPtLights.x > 0)
 		result += calcPBRSpotLight(spotLight, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
 
-	vec3 ambient = vec3(0.03) * albedo * AOPBRMat;
+	vec3 ambient = vec3(0.03) * albedo * AOPBRMat * SSAOSample;
     result += ambient;  
 
 	return result;
@@ -156,7 +157,7 @@ vec3 calcPBRLight(vec3 radiance, vec3 lightDir, vec3 fragPos, vec3 normal, vec3 
 	vec3 kD = vec3(1.0) - F;
 
 	// Metallic surfaces don't refract light (so shouldn't have a diffuse part). Therefore scale down diffuse based on metallic componenent. 
-	// Metallic of 1.0 - no diffuse, metallic 0.0 - full diffuse.
+	// Metallic of 1.0 = no diffuse, metallic 0.0 = full diffuse.
 	kD *= 1.0 - metallic;
 	vec3 diffuse = kD * albedo / PI;
 
@@ -177,9 +178,16 @@ vec3 calcPBRPointLight(PointLight light, vec3 fragPos, vec3 normal, vec3 viewDir
 }
 
 vec3 calcPBRDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
+	vec3 lightDir = normalize(-vec3(light.direction));
+
 	// for directional lights no attentuation
 	vec3 radiance = vec3(light.color);
-	return calcPBRLight(radiance, -vec3(light.direction), fragPos, normal, viewDir, albedo, metallic, roughness, F0);
+
+	float shadow = 0;
+	if (directionalShadowsEnabled)
+		shadow = calcDirLightShadow(fragPos, normal, lightDir);
+
+	return (1 - shadow) * calcPBRLight(radiance, lightDir, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
 }
 
 vec3 calcPBRSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, vec3 albedo, float metallic, float roughness, vec3 F0){
@@ -190,8 +198,7 @@ vec3 calcPBRSpotLight(SpotLight light, vec3 fragPos, vec3 normal, vec3 viewDir, 
 	float attenuation = calcAttenuation(vec3(light.position), fragPos, light.attenuation.x, light.attenuation.y, light.attenuation.z);
 	float intensity = calcSpotLightIntensity(light, fragToLightDir, spotLightDir);
 
-	// multiplying by 15 to make light more intense overall since setting the base color this high will make Phong too bright for such lights.
-	vec3 radiance = vec3(light.color) * attenuation * intensity * 15;
+	vec3 radiance = vec3(light.color) * attenuation * intensity;
 	return calcPBRLight(radiance, fragToLightDir, fragPos, normal, viewDir, albedo, metallic, roughness, F0);
 }
 
@@ -204,6 +211,7 @@ vec3 fresnelSchlick(vec3 halfway, vec3 viewDir, vec3 F0){
 }
 
 // normal distribution function
+
 float NDF(vec3 normal, vec3 halfway, float roughness){
 	float a = roughness * roughness;
 	float a2 = pow(a, 2);
@@ -263,8 +271,11 @@ vec3 calcPhongDirLight(DirLight light, vec3 fragPos, vec3 normal, vec3 viewDir, 
 	//combine results
     vec3 diffuse  = vec3(light.color) * diff * texDiff;
     vec3 specular = vec3(light.color) * spec * texSpec;
+	
+	float shadow = 0;
+	if(directionalShadowsEnabled)
+		shadow = calcDirLightShadow(fragPos, normal, lightDir);
 
-	float shadow = calcDirLightShadow(fragPos, normal, lightDir);
 	return ((1.0 - shadow) * (diffuse + specular));
 }
 

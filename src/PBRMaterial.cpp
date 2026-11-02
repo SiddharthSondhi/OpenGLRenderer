@@ -2,13 +2,15 @@
 #include <glad/glad.h>
 #include <memory>
 
-PBRMaterial::PBRMaterial(unsigned int albedoTex, unsigned int metallicTex, unsigned int roughnessTex, unsigned int AOTex, unsigned int normalTex,
+PBRMaterial::PBRMaterial(unsigned int albedoTex, unsigned int metallicTex, unsigned int roughnessTex, 
+						 unsigned int AOTex, unsigned int normalTex, unsigned int metallicRoughnessTex,
 						 glm::vec3 albedoColor, float metallic, float roughness)
 	: albedoTex{ albedoTex },
 	metallicTex{ metallicTex },
 	roughnessTex{ roughnessTex },
 	AOTex{ AOTex },
-	normalTex { normalTex },
+	normalTex{ normalTex },
+	metallicRoughnessTex{ metallicRoughnessTex },
 	albedoColor{ albedoColor },
 	metallic{ metallic },
 	roughness{ roughness } 
@@ -45,6 +47,10 @@ void PBRMaterial::bind(const Shader& shader) const {
 	glBindTexture(GL_TEXTURE_2D, normalTex);
 	shader.setInt("pbrMat.texture_normal", NORMAL_TEXTURE_UNIT);
 
+	glActiveTexture(GL_TEXTURE0 + METALLIC_ROUGHNESS_TEXTURE_UNIT);
+	glBindTexture(GL_TEXTURE_2D, metallicRoughnessTex);
+	shader.setInt("pbrMat.texture_metallic_roughness", METALLIC_ROUGHNESS_TEXTURE_UNIT);
+
 	shader.setVec3("pbrMat.albedoColor", albedoColor);
 	shader.setFloat("pbrMat.metallic", metallic);
 	shader.setFloat("pbrMat.roughness", roughness);
@@ -54,6 +60,7 @@ void PBRMaterial::bind(const Shader& shader) const {
 	shader.setBool("pbrMat.hasRoughnessMap", !(roughnessTex == 0));
 	shader.setBool("pbrMat.hasAOMap", !(AOTex == 0));
 	shader.setBool("pbrMat.hasNormalMap", !(normalTex == 0));
+	shader.setBool("pbrMat.packedMetallicRoughnessTex", !(metallicRoughnessTex == 0));
 }
 
 std::unique_ptr<Material> PBRMaterial::clone() const {

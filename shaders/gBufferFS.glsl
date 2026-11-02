@@ -34,6 +34,7 @@ struct PBRMaterial{
 	sampler2D texture_roughness;
 	sampler2D texture_AO;
 	sampler2D texture_normal;
+	sampler2D texture_metallic_roughness;
 
 	vec3 albedoColor;
 	float metallic;
@@ -44,6 +45,7 @@ struct PBRMaterial{
 	bool hasRoughnessMap;
 	bool hasAOMap;
 	bool hasNormalMap;
+	bool packedMetallicRoughnessTex;
 };
 
 uniform PhongMaterial phongMat;
@@ -96,15 +98,26 @@ void main(){
 		else
 			gAlbedoSpec.rgb = pbrMat.albedoColor;
 
+		// sample mettallic roughness texture if packed so it only has to be done once
+		vec4 metallicRoughness;
+		if (pbrMat.packedMetallicRoughnessTex)
+			metallicRoughness = texture(pbrMat.texture_metallic_roughness, fs_in.texCoords);
+
 		//metallic
-		if (pbrMat.hasMetallicMap)
-			gMisc.r = texture(pbrMat.texture_metallic, fs_in.texCoords).r;
+		if (pbrMat.packedMetallicRoughnessTex)
+			// blue channel used for metallic if packed
+			gMisc.r = metallicRoughness.b * pbrMat.metallic; 
+		else if (pbrMat.hasMetallicMap)
+			gMisc.r = texture(pbrMat.texture_metallic, fs_in.texCoords).r * pbrMat.metallic;
 		else 
 			gMisc.r = pbrMat.metallic;
 
 		//roughness
-		if (pbrMat.hasRoughnessMap)
-			gMisc.g = texture(pbrMat.texture_roughness, fs_in.texCoords).r;
+		if (pbrMat.packedMetallicRoughnessTex)
+			// green channel used for roughness if packed
+			gMisc.g = metallicRoughness.g * pbrMat.roughness; 
+		else if (pbrMat.hasRoughnessMap)
+			gMisc.g = texture(pbrMat.texture_roughness, fs_in.texCoords).r * pbrMat.roughness;
 		else 
 			gMisc.g = pbrMat.roughness;
 

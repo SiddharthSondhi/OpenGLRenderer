@@ -4,7 +4,8 @@
 
 class PBRMaterial : public Material {
 public:
-	PBRMaterial(unsigned int albedoTex, unsigned int metallicTex = 0, unsigned int roughnessTex = 0, unsigned int AOtex = 0, unsigned int normalTex = 0,
+	PBRMaterial(unsigned int albedoTex, unsigned int metallicTex = 0, unsigned int roughnessTex = 0, 
+		unsigned int AOtex = 0, unsigned int normalTex = 0, unsigned int metallicRoughnessTex = 0,
 		glm::vec3 albedoColor = glm::vec3(1.0f), float metallic = 0.5f, float roughness = 0.5f);
 
 	PBRMaterial(glm::vec3 albedoColor, float metallic, float roughness);
@@ -18,14 +19,17 @@ public:
 	unsigned int roughnessTex{ 0 };
 	unsigned int AOTex{ 0 };
 	unsigned int normalTex{ 0 };
+	unsigned int metallicRoughnessTex{ 0 };
 
 	glm::vec3 albedoColor{1.0f};
-	float metallic{ 0.5f };
-	float roughness{ 0.5f };
+	float metallic{ 1.0f };
+	float roughness{ 1.0f };
 
 	static constexpr unsigned int ALBEDO_TEXTURE_UNIT{ 0 };
 	static constexpr unsigned int METALLIC_TEXTURE_UNIT{ 1 };
 	static constexpr unsigned int ROUGHNESS_TEXTURE_UNIT{ 2 };
 	static constexpr unsigned int AO_TEXTURE_UNIT{ 3 };
 	static constexpr unsigned int NORMAL_TEXTURE_UNIT{ 4 };
+	static constexpr unsigned int METALLIC_ROUGHNESS_TEXTURE_UNIT{ 5 };
+
 };

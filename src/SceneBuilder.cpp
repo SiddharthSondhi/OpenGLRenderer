@@ -213,6 +213,11 @@ Scene buildShadowScene(Resources& r) {
     scene.addObject("cube2", cube2);
     scene.addObject("cube3", cube3);
 
+    SceneObject gun{ &r.gunModel, {-13.5f, 7.0f, 0.0f} };
+    gun.rotation = { 0.0f, -90.0f, 0.0f };
+    gun.scale = glm::vec3{ .05f };
+    scene.addObject("gun", gun);
+
     return scene;
 }
 
@@ -321,6 +326,12 @@ Scene buildPBRScene(Resources& r) {
     SceneObject s2{ &r.sphereModel, r.wispyGrass };
     s2.position = { -15.0f, 0.0f, 0.0f };
     scene.addObject("s2", s2);
+
+    SceneObject gun{ &r.gunModel, {-13.5f, 7.0f, 0.0f} };
+    gun.rotation = { 0.0f, -90.0f, 0.0f };
+    gun.scale = glm::vec3{ .05f };
+    scene.addObject("gun", gun);
+
 
     SceneObject pl1{ &r.lightModel,  {-8.0f, 8.0f, 20.0f} };
     pl1.scale = glm::vec3{ 0.2f };

@@ -19,7 +19,7 @@ struct ModelLoadOptions {
 
 class Model {
 public:
-	Model(std::string path, const ModelLoadOptions& options = {});
+	Model(std::string path, const ModelLoadOptions& options = {}, const Material::Type matType = Material::Phong);
 	Model(const Mesh& mesh, const Material& material);
 
 	const std::vector<Mesh>& getMeshes() const;
@@ -33,8 +33,10 @@ private:
 
 	void processNode(aiNode* node, const aiScene* scene, const ModelLoadOptions& options);
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene, const ModelLoadOptions& options);
-	void processMaterials(const aiScene* scene, const ModelLoadOptions& options);
-	unsigned int loadMaterialTextures(aiMaterial* mat, aiTextureType type, const aiScene* scene);
+	void processMaterials(const aiScene* scene, const ModelLoadOptions& options, const Material::Type matType);
+	void processPBRMat(const aiScene* scene, const aiMaterial* assimpMat);
+	void processPhongMat(const aiScene* scene, const aiMaterial* assimpMat);
+	unsigned int loadMaterialTextures(const aiMaterial* mat, const aiTextureType type, const aiScene* scene);
 
 	void printMaterialInfo(const aiMaterial* mat) const;
 };

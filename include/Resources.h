@@ -14,15 +14,15 @@
 #include <array>
 
 struct Resources {
-	// shaders
-	Shader instanceObjectShader{ "./shaders/instanceObjectVS.glsl", "./shaders/phongFS.glsl" };
-	Shader phongShader{ "./shaders/phongVS.glsl", "./shaders/phongFS.glsl" };
+    // shaders
+    Shader instanceObjectShader{ "./shaders/instanceObjectVS.glsl", "./shaders/phongFS.glsl" };
+    Shader phongShader{ "./shaders/phongVS.glsl", "./shaders/phongFS.glsl" };
     Shader solidColorShader{ "./shaders/solidColorVS.glsl", "./shaders/solidColorFS.glsl" };
-    Shader depthShader{"./shaders/depthVS.glsl", "./shaders/depthFS.glsl"};
-    Shader reflectiveShader{"./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl"};
-    Shader refractiveShader{"./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl"};
-    Shader explodeNormalsShader{"./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl"};
-    Shader normalVisShader{"./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl"};
+    Shader depthShader{ "./shaders/depthVS.glsl", "./shaders/depthFS.glsl" };
+    Shader reflectiveShader{ "./shaders/reflectiveVS.glsl", "./shaders/reflectiveFS.glsl" };
+    Shader refractiveShader{ "./shaders/refractiveVS.glsl", "./shaders/refractiveFS.glsl" };
+    Shader explodeNormalsShader{ "./shaders/explodeNormalsVS.glsl", "./shaders/explodeNormalsFS.glsl", "./shaders/explodeNormalsGS.glsl" };
+    Shader normalVisShader{ "./shaders/normalsVS.glsl", "./shaders/normalsFS.glsl", "./shaders/normalsGS.glsl" };
     Shader deferredPhongShader{ "./shaders/postProcVS.glsl", "./shaders/deferredLightingFS.glsl" };
 
     //skyboxes
@@ -48,7 +48,7 @@ struct Resources {
     unsigned int woodTex{ Utils::loadTextureFromFile("./resources/textures/wood.jpg", true) };
     unsigned int brickWallTex{ Utils::loadTextureFromFile("./resources/textures/brickwall.jpg", true) };
     unsigned int brickWallNormalMap{ Utils::loadTextureFromFile("./resources/textures/brickwall_normal.jpg") };
-    
+
     unsigned int PBR1Albedo{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_basecolor.png", true) };
     unsigned int PBR1Metallic{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_metallic.png") };
     unsigned int PBR1Normal{ Utils::loadTextureFromFile("./resources/textures/rustediron/rustediron2_normal.png") };
@@ -68,7 +68,7 @@ struct Resources {
     SolidColorMaterial whiteMat{ Colors::white };
     PhongMaterial marbleMat{ boxMarbleTex };
     PhongMaterial woodMat{ woodTex };
-    PhongMaterial brickWallMat{ brickWallTex, 0, brickWallNormalMap};
+    PhongMaterial brickWallMat{ brickWallTex, 0, brickWallNormalMap };
     BasicMaterial normalsVisMaterial{ normalVisShader };
     BasicMaterial reflectiveMat{ reflectiveShader };
     BasicMaterial refractiveMat{ refractiveShader };
@@ -79,11 +79,11 @@ struct Resources {
 
     // meshes
     Mesh cubeMesh{ VertexData::cube, {3, 3, 2} };
-    Mesh planeMesh{ VertexData::plane, {3, 3, 2}};
+    Mesh planeMesh{ VertexData::plane, {3, 3, 2} };
     Mesh tunnelMesh{ VertexData::insideOutCube, {3, 3, 2} };
     Mesh sphereMesh{ VertexData::genSphereVertices(), {3, 3, 2, 3, 3}, 0, VertexData::genSphereIndices() };
 
-	// models
+    // models
     Model planetModel{ "./resources/models/planet/planet.obj" };
     Model asteroidModel{ "./resources/models/rock/rock.obj", { true } };
     Model backpackModel{ "./resources/models/backpack/backpack.obj", { false, true } };
@@ -91,9 +91,10 @@ struct Resources {
     Model cubeModel{ cubeMesh, marbleMat };
     Model planeModel{ planeMesh, woodMat };
     Model countrySceneModel{ "./resources/models/countryside-scene-free/source/untitled.glb", { true } };
-    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" , { true }  };
+    Model citySceneModel{ "./resources/models/city-scene/source/Untitled.glb" , { true } };
     Model bunnyModel{ "./resources/models/bunny/stanford-bunny.obj" };
     Model tunnelModel{ tunnelMesh, woodMat };
     Model backroomsModel{ "./resources/models/backrooms/backrooms_vr.glb", {true, true, false} };
     Model sphereModel{ sphereMesh, rustedIronMat };
+    Model gunModel{ "./resources/models/Cerberus_by_Andrew_Maximov/fixed_model.glb", {true, true, true, true}, Material::PBR };
 };

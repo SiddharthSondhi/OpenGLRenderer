@@ -9,30 +9,42 @@ A real time renderer written in C++ using OpenGL 4.6.
 ### Rendering
 
 - OpenGL rendering pipeline
-- Blinn-Phong lighting model
+- Forward and deferred shading
+- Blinn-Phong and physically based rendering (PBR) using the Cook-Torrance BRDF
 - Directional, point, and spot lights
 - Instanced rendering
 - Skyboxes
 - Cubemap reflections and refractions
 - Normal mapping
 - Shadow mapping with simple percentage closer filtering (PCF)
+- Screen Space Ambient Occlusion (SSAO)
+
 
 ### Materials
 
 - Diffuse, specular, and normal textures
+- Support for both Blinn-Phong and PBR materials
 - Material abstraction for managing shaders and textures
 - Support for imported model materials
+- Support for embedded textures and packed metallic-roughness maps
+
 
 ### Model Loading
 
 - Assimp integration
 - Use of Assimp to import models which are converted into my model format that can be rendered with the pipleline
+- Support for importing material properties and textures
+- Tangent and bitangent generation for normal mapping
+
 
 ### Post Processing
 
 - Framebuffer rendering
 - Convolution filters for viusual effects
 - Gamma Correction
+- HDR/tone mapping
+- SSAO with noise sampling and blur
+
 
 ### User Interface
 
@@ -76,11 +88,30 @@ Each scene is responsible for creating and updating objects, while the renderer 
 ---
 
 ## Examples
-![PhongLighting](images/planet-scene.gif)
+**Physically Based Rendering**
+![PBR](images/PBR1.gif)
+![PBR](images/PBR2.gif)
+
+**Deferred Rendering**
+![DeferredRendering](images/deferred1.png)
+![DeferredRendering](images/deferred2.png)
+
+**SSAO**
+![SSAO](images/SSAO.gif)
+
+**Instanced Rendering**
+![Instanced Rendering](images/planet-scene.gif)
+
+**Directional Shadow Mapping**
+![DirectionalShadows](images/directional-shadows.gif)
+
+**Blinn-Phong Lighting**
 ![PhongLighting](images/phong-lighting.gif)
+
+**Additional Effects**
 ![EnvironmentMapping](images/bunny.gif)
-![PhongLighting](images/depth-shader.gif)
-![PhongLighting](images/post-proc.gif)
+![DepthShader](images/depth-shader.gif)
+![PostProcFilters](images/post-proc.gif)
 
 
 ---
@@ -103,13 +134,9 @@ Some third party dependencies (such as the Assimp DLL) may need to be installed 
 
 Some features planned for future versions include:
 
-- Physically Based Rendering (PBR)
 - Image Based Lighting (IBL)
 - Omnidirectional shadow mapping
-- Deferred shading
-- HDR
 - Bloom
-- SSAO
 - Particle System
 - Terrain Generation
 - Parallax Mapping

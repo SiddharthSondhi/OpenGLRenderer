@@ -327,7 +327,7 @@ Scene buildPBRScene(Resources& r) {
     s2.position = { -15.0f, 0.0f, 0.0f };
     scene.addObject("s2", s2);
 
-    SceneObject gun{ &r.gunModel, {-13.5f, 7.0f, 0.0f} };
+    SceneObject gun{ &r.gunModel, {0.0f, 7.0f, 40.0f} };
     gun.rotation = { 0.0f, -90.0f, 0.0f };
     gun.scale = glm::vec3{ .05f };
     scene.addObject("gun", gun);
